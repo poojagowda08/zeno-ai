@@ -118,11 +118,11 @@ def process_message(prompt: str):
         search_url = f"https://www.google.com/search?q={query}"
         return f"🔍 ಗೂಗಲ್‌ನಲ್ಲಿ ಹುಡುಕಲಾಗುತ್ತಿದೆ: **{search_query}**\n\n👉 [ರಿಸಲ್ಟ್ ನೋಡಲು ಇಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ]({search_url})"
         
-    # Feature 5: Gemini AI Response (Fixed to gemini-1.5-flash)
+    # Feature 5: Gemini AI Response (Fixed to gemini-3.8-flash)
     else:
         try:
             response = client.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-3.8-flash",
                 contents=prompt
             )
             return response.text
