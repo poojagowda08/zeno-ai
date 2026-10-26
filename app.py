@@ -65,10 +65,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------- GEMINI CLIENT -----------------
-# ಇಲ್ಲಿ ನಿಮ್ಮ Gemini API Key ಅನ್ನು ಡಬಲ್ ಕೋಟ್ಸ್ ಒಳಗಡೆ ಪೇಸ್ಟ್ ಮಾಡಿ:
-api_key = "AQ.Ab8RN6KuSYT2itjF0t97FWBR3V_YQSnPoLFHoM2sdWi5opEpyg"
+api_key = st.secrets["GEMINI_API_KEY"]
 
 client = genai.Client(api_key=api_key)
+
 
 SYSTEM_INSTRUCTION = """
 You are Zeno, a friendly and ultra-smart AI assistant.
