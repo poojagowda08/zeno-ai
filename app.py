@@ -127,7 +127,7 @@ def process_command_or_chat(prompt: str):
     else:
         try:
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.8-flash",
                 contents=prompt
             )
             return response.text
