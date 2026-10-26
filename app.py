@@ -66,7 +66,7 @@ st.markdown("""
 
 # ----------------- GEMINI CLIENT -----------------
 # ಇಲ್ಲಿ ನಿಮ್ಮ Gemini API Key ಅನ್ನು ಡಬಲ್ ಕೋಟ್ಸ್ ಒಳಗಡೆ ಪೇಸ್ಟ್ ಮಾಡಿ:
-api_key = "AQ.Ab8RN6J1EhLIXLSP4-hEewYRRi52ds49BDLNkMnhZn5e2Widkw"
+api_key = "AQ.Ab8RN6KuSYT2itjF0t97FWBR3V_YQSnPoLFHoM2sdWi5opEpyg"
 
 client = genai.Client(api_key=api_key)
 
