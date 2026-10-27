@@ -64,11 +64,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- DIRECT API KEY SETUP -----------------
-# ಇಲ್ಲಿ ನಿಮ್ಮ ಹೊಸ ಖಾತೆಯ API Key ಅನ್ನು ಡಬಲ್ ಕೋಟ್ಸ್ "" ನಡುವೆ ಹಾಕಿ:
-RAW_KEY = "AQ.Ab8RN6Ju0kfVCRlhRR8ZaNxhSMRa3po55sP0HcFz9YIcCAqhdA"
-
-client = genai.Client(api_key=RAW_KEY.strip())
+# ----------------- GEMINI CLIENT -----------------
+api_key = st.secrets.get("GEMINI_API_KEY", "")
+client = genai.Client(api_key=api_key)
 
 SYSTEM_INSTRUCTION = """
 You are Zeno, a friendly and ultra-smart AI assistant.
@@ -179,7 +177,7 @@ if user_input:
     with st.chat_message("assistant", avatar="🔮"):
         try:
             response = client.models.generate_content(
-                model="gemini-3.8-flash",
+                model="gemini-2.5-flash",
                 contents=user_input,
                 config=types.GenerateContentConfig(
                     system_instruction=SYSTEM_INSTRUCTION,
