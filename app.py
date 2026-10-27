@@ -64,10 +64,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- GEMINI CLIENT -----------------
-# Streamlit Secrets ನಿಂದ ಕೀ ತರುತ್ತದೆ
-api_key = st.secrets["GEMINI_API_KEY"]
-client = genai.Client(api_key=api_key)
+# ----------------- DIRECT API KEY SETUP -----------------
+# ಇಲ್ಲಿ ನಿಮ್ಮ ಹೊಸ ಖಾತೆಯ API Key ಅನ್ನು ಡಬಲ್ ಕೋಟ್ಸ್ "" ನಡುವೆ ಹಾಕಿ:
+RAW_KEY = "AQ.Ab8RN6Ju0kfVCRlhRR8ZaNxhSMRa3po55sP0HcFz9YIcCAqhdA"
+
+client = genai.Client(api_key=RAW_KEY.strip())
 
 SYSTEM_INSTRUCTION = """
 You are Zeno, a friendly and ultra-smart AI assistant.
@@ -190,7 +191,7 @@ if user_input:
             st.markdown(clean_reply)
             st.session_state.messages.append({"role": "assistant", "content": clean_reply})
 
-            # Fixed Single Clean Female Voice Script
+            # Voice Output
             tts_script = f"""
             <script>
                 if ('speechSynthesis' in window) {{
