@@ -1,237 +1,225 @@
 import streamlit as st
-import streamlit.components.v1 as components
+import datetime
 from google import genai
-from google.genai import errors
-import urllib.parse
+from google.genai import types
 
-# 1. Page Configuration
-st.set_page_config(page_title="ZENO AI", page_icon="⚡", layout="centered")
+# ----------------- PAGE CONFIG -----------------
+st.set_page_config(
+    page_title="ZENO AI",
+    page_icon="🔮",
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
-# 2. Dark Theme Styling
+# Clean Cyberpunk Theme
 st.markdown("""
-    <style>
-    .stApp { background-color: #0d1117; color: #ffffff; }
-    .title-box { text-align: center; padding: 10px 0; }
-    .title { color: #58a6ff; font-weight: 800; font-size: 28px; }
-    .subtitle { color: #8b949e; font-size: 14px; margin-top: -5px; }
-    .chat-bubble {
-        padding: 12px 16px;
-        border-radius: 12px;
-        margin-bottom: 12px;
-        font-size: 15px;
-        line-height: 1.5;
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Rajdhani:wght@600&display=swap');
+    
+    .stApp {
+        background: radial-gradient(circle at 50% 20%, #0c1024 0%, #05070e 100%);
+        color: #e0f7fa;
+        font-family: 'Rajdhani', sans-serif;
     }
-    .user-bubble {
-        background-color: #21262d;
-        border-left: 4px solid #58a6ff;
-        color: #e6edf3;
-    }
-    .bot-bubble {
-        background-color: #161b22;
-        border-left: 4px solid #a371f7;
-        color: #f0f6fc;
-    }
-    .lock-box {
-        background: #1c2128;
-        padding: 25px;
-        border-radius: 12px;
-        border: 1px solid #30363d;
+    
+    .zeno-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 2.1rem;
+        font-weight: 900;
         text-align: center;
-        margin-top: 30px;
+        background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: 2px;
+        margin-bottom: 2px;
     }
-    </style>
+    
+    .zeno-subtitle {
+        text-align: center;
+        font-size: 0.9rem;
+        color: #80deea;
+        margin-bottom: 20px;
+    }
+    
+    .orb-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 15px 0;
+    }
+    
+    .orb {
+        width: 85px;
+        height: 85px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #00f2fe 20%, #7f00ff 80%);
+        box-shadow: 0 0 25px #00f2fe, 0 0 50px #7f00ff;
+        animation: pulse 2s infinite alternate;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 15px #00f2fe; }
+        100% { transform: scale(1.05); box-shadow: 0 0 35px #00f2fe, 0 0 60px #7f00ff; }
+    }
+</style>
 """, unsafe_allow_html=True)
 
-# 3. Session State & App Lock Variables
-DEFAULT_PIN = "1234"
-
-if "is_locked" not in st.session_state:
-    st.session_state.is_locked = False
-
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-# 4. Gemini API Client Setup
-if "GEMINI_API_KEY" in st.secrets:
-    api_key = st.secrets["GEMINI_API_KEY"]
-else:
-    st.error("⚠️ Streamlit Secrets ನಲ್ಲಿ GEMINI_API_KEY ಸೆಟ್ ಮಾಡಿಲ್ಲ!")
-    st.stop()
-
+# ----------------- GEMINI CLIENT -----------------
+# Streamlit Secrets ನಿಂದ ಕೀ ತರುತ್ತದೆ
+api_key = st.secrets["GEMINI_API_KEY"]
 client = genai.Client(api_key=api_key)
 
-# 5. Lock Screen Check
-if st.session_state.is_locked:
-    st.markdown("<div class='title-box'><h2 class='title'>🔒 ZENO AI IS LOCKED</h2></div>", unsafe_allow_html=True)
-    st.markdown("<div class='lock-box'>ಅನ್‌ಲಾಕ್ ಮಾಡಲು PIN ನಮೂದಿಸಿ (Default PIN: <b>1234</b>)</div>", unsafe_allow_html=True)
-    
-    pin_input = st.text_input("PIN:", type="password", key="unlock_pin")
-    if st.button("Unlock 🔓"):
-        if pin_input == DEFAULT_PIN:
-            st.session_state.is_locked = False
-            st.success("Unlocked successfully!")
-            st.rerun()
-        else:
-            st.error("ತಪ್ಪು PIN! ದಯವಿಟ್ಟು 1234 ನಮೂದಿಸಿ.")
-    st.stop()
+SYSTEM_INSTRUCTION = """
+You are Zeno, a friendly and ultra-smart AI assistant.
+Keep spoken replies brief, clean, and conversational (1 to 3 short sentences).
+Never use markdown symbols like asterisks (*) or hashes (#) in your response, so the speech engine reads it completely cleanly.
+"""
 
-# 6. Main UI Header
-st.markdown("""
-    <div class='title-box'>
-        <div class='title'>⚡ ZENO AI ⚡</div>
-        <div class='subtitle'>Smart Voice & AI Assistant</div>
-    </div>
-""", unsafe_allow_html=True)
+# ----------------- SESSION -----------------
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "assistant", "content": "Hello! I am Zeno. How can I help you today?"}
+    ]
 
-# 7. Command & AI Handler Function
-def process_message(prompt: str):
-    text = prompt.lower().strip()
-    
-    # Feature 1: Lock command
-    if text == "lock" or "lock app" in text or "lock zeno" in text:
-        st.session_state.is_locked = True
-        return "🔒 Zeno AI ಅನ್ನು ಲಾಕ್ ಮಾಡಲಾಗಿದೆ. ಅನ್‌ಲಾಕ್ ಮಾಡಲು PIN ಹಾಕಿ."
-    
-    # Feature 2: Play Song (YouTube)
-    elif text.startswith("play ") or "play song" in text:
-        song_name = text.replace("play song", "").replace("play", "").strip()
-        query = urllib.parse.quote(song_name)
-        yt_url = f"https://www.youtube.com/results?search_query={query}"
-        return f"🎵 ಪ್ಲೇ ಮಾಡಲಾಗುತ್ತಿದೆ: **{song_name}**\n\n👉 [ಹಾಡು ಕೇಳಲು ಇಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ]({yt_url})"
-        
-    # Feature 3: Open Apps / Websites
-    elif "open google" in text:
-        return "👉 [Google ತೆರೆಯಲು ಇಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ](https://www.google.com)"
-    elif "open youtube" in text:
-        return "👉 [YouTube ತೆರೆಯಲು ಇಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ](https://www.youtube.com)"
-    elif "open spotify" in text:
-        return "👉 [Spotify ತೆರೆಯಲು ಇಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ](https://open.spotify.com)"
-    elif "open instagram" in text:
-        return "👉 [Instagram ತೆರೆಯಲು ಇಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ](https://www.instagram.com)"
-    elif "open github" in text:
-        return "👉 [GitHub ತೆರೆಯಲು ಇಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ](https://github.com)"
-        
-    # Feature 4: Google Search
-    elif text.startswith("search ") or text.startswith("google "):
-        search_query = text.replace("search", "").replace("google", "").strip()
-        query = urllib.parse.quote(search_query)
-        search_url = f"https://www.google.com/search?q={query}"
-        return f"🔍 ಗೂಗಲ್‌ನಲ್ಲಿ ಹುಡುಕಲಾಗುತ್ತಿದೆ: **{search_query}**\n\n👉 [ರಿಸಲ್ಟ್ ನೋಡಲು ಇಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ]({search_url})"
-        
-    # Feature 5: Gemini AI Response (Fixed to gemini-3.8-flash)
-    else:
-        try:
-            response = client.models.generate_content(
-                model="gemini-3.8-flash",
-                contents=prompt
-            )
-            return response.text
-        except errors.APIError as e:
-            return f"API Error: {e}"
-        except Exception as e:
-            return f"Error: {e}"
+# ----------------- HEADER -----------------
+st.markdown('<div class="zeno-title">⚡ ZENO AI ⚡</div>', unsafe_allow_html=True)
+st.markdown('<div class="zeno-subtitle">Voice Assistant</div>', unsafe_allow_html=True)
+st.markdown('<div class="orb-container"><div class="orb"></div></div>', unsafe_allow_html=True)
 
-# 8. Web Speech Microphone Component (Pure JavaScript)
-mic_component = """
-<div style="text-align: center; margin: 15px 0;">
-    <div style="
-        width: 60px; height: 60px; 
-        background: radial-gradient(circle, #00f0ff 0%, #7000ff 70%); 
-        border-radius: 50%; 
-        margin: 0 auto 10px auto;
-        box-shadow: 0 0 20px rgba(0, 240, 255, 0.6);">
-    </div>
-
-    <button id="mic-btn" style="
-        background: linear-gradient(135deg, #00d2ff, #3a7bd5);
-        color: white;
+# ----------------- SPEECH RECOGNITION (MIC) -----------------
+st.components.v1.html("""
+<div style="text-align: center; margin-bottom: 10px;">
+    <button id="micBtn" style="
+        background: linear-gradient(45deg, #00f2fe, #4facfe);
         border: none;
-        padding: 10px 24px;
-        font-size: 15px;
-        font-weight: 700;
-        border-radius: 25px;
+        color: #030816;
+        padding: 10px 22px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 14px;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0,210,255,0.4);
+        box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
     ">🎙️ Touch to Speak</button>
-    
-    <p id="mic-status" style="color: #8b949e; font-size: 13px; margin-top: 6px;">Tap to speak</p>
+    <div id="status" style="color: #80deea; font-size: 12px; margin-top: 6px;">Tap to speak</div>
 </div>
 
 <script>
-const btn = document.getElementById('mic-btn');
-const status = document.getElementById('mic-status');
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const micBtn = document.getElementById('micBtn');
+    const status = document.getElementById('status');
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-if (!SpeechRecognition) {
-    status.innerText = "Speech Recognition not supported. Please use Chrome.";
-} else {
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-IN';
-    recognition.interimResults = false;
+    if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
 
-    btn.onclick = () => {
-        try {
-            recognition.start();
-            status.innerText = "Listening... Speak now";
-            btn.style.background = "#e63946";
-        } catch(e) {
-            recognition.stop();
-        }
-    };
+        micBtn.onclick = () => {
+            try {
+                recognition.start();
+                status.innerText = "Listening... Speak now";
+                micBtn.style.background = "#ff3366";
+            } catch(e) {
+                recognition.stop();
+            }
+        };
 
-    recognition.onresult = (event) => {
-        const spokenText = event.results[0][0].transcript;
-        status.innerText = "Heard: " + spokenText;
-        btn.style.background = "linear-gradient(135deg, #00d2ff, #3a7bd5)";
-        
-        // Put text into Streamlit input box and trigger Send
-        const inputs = window.parent.document.querySelectorAll('input[type="text"]');
-        if (inputs.length > 0) {
-            const targetInput = inputs[0];
-            targetInput.value = spokenText;
-            targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-            targetInput.dispatchEvent(new Event('change', { bubbles: true }));
-            
-            setTimeout(() => {
-                const forms = window.parent.document.querySelectorAll('form');
-                if (forms.length > 0) {
-                    const submitBtn = forms[0].querySelector('button');
-                    if (submitBtn) submitBtn.click();
-                }
-            }, 300);
-        }
-    };
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            status.innerText = "Heard: " + transcript;
+            micBtn.style.background = "linear-gradient(45deg, #00f2fe, #4facfe)";
 
-    recognition.onerror = (event) => {
-        status.innerText = "Mic Error: " + event.error;
-        btn.style.background = "linear-gradient(135deg, #00d2ff, #3a7bd5)";
-    };
+            const lower = transcript.toLowerCase();
+            if (lower.startsWith("play ")) {
+                const query = transcript.replace(/play/i, '').trim();
+                window.open("https://www.youtube.com/results?search_query=" + encodeURI(query), "_blank");
+            } else if (lower.includes("open youtube")) {
+                window.open("https://www.youtube.com", "_blank");
+            } else if (lower.includes("open google")) {
+                window.open("https://www.google.com", "_blank");
+            }
 
-    recognition.onend = () => {
-        btn.style.background = "linear-gradient(135deg, #00d2ff, #3a7bd5)";
-    };
-}
+            const inputField = window.parent.document.querySelector('textarea[aria-label="Ask Zeno anything..."]');
+            if (inputField) {
+                inputField.value = transcript;
+                inputField.dispatchEvent(new Event('input', { bubbles: true }));
+                const submitBtn = window.parent.document.querySelector('button[kind="secondaryFormSubmit"], button[data-testid="stBaseButton-secondary"]');
+                if (submitBtn) submitBtn.click();
+            }
+        };
+
+        recognition.onerror = (e) => {
+            status.innerText = "Mic Error: Please tap again";
+            micBtn.style.background = "linear-gradient(45deg, #00f2fe, #4facfe)";
+        };
+
+        recognition.onend = () => {
+            micBtn.style.background = "linear-gradient(45deg, #00f2fe, #4facfe)";
+        };
+    } else {
+        status.innerText = "Use Google Chrome for Voice Input.";
+    }
 </script>
-"""
+""", height=70)
 
-components.html(mic_component, height=140)
+# ----------------- DISPLAY CHAT -----------------
+for msg in st.session_state.messages:
+    avatar = "🔮" if msg["role"] == "assistant" else "👤"
+    with st.chat_message(msg["role"], avatar=avatar):
+        st.markdown(msg["content"])
 
-# 9. Display Chat Messages
-for chat in st.session_state.chat_history:
-    bubble_class = "user-bubble" if chat["role"] == "user" else "bot-bubble"
-    sender = "👤 You:" if chat["role"] == "user" else "🔮 Zeno:"
-    st.markdown(f"<div class='chat-bubble {bubble_class}'><b>{sender}</b><br>{chat['content']}</div>", unsafe_allow_html=True)
+# ----------------- CHAT INPUT -----------------
+user_input = st.chat_input("Ask Zeno anything...")
 
-# 10. User Text Input Form
-with st.form("chat_input_form", clear_on_submit=True):
-    user_query = st.text_input("Ask Zeno anything...", placeholder="Type here or use Touch to Speak...")
-    submitted = st.form_submit_button("Send ⬆️")
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user", avatar="👤"):
+        st.markdown(user_input)
 
-if submitted and user_query.strip():
-    st.session_state.chat_history.append({"role": "user", "content": user_query})
-    
-    with st.spinner("Zeno is thinking..."):
-        reply = process_message(user_query)
-        
-    st.session_state.chat_history.append({"role": "bot", "content": reply})
-    st.rerun()
+    with st.chat_message("assistant", avatar="🔮"):
+        try:
+            response = client.models.generate_content(
+                model="gemini-1.5-flash",
+                contents=user_input,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_INSTRUCTION,
+                    temperature=0.6,
+                )
+            )
+            clean_reply = response.text.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
+            
+            st.markdown(clean_reply)
+            st.session_state.messages.append({"role": "assistant", "content": clean_reply})
+
+            # Fixed Single Clean Female Voice Script
+            tts_script = f"""
+            <script>
+                if ('speechSynthesis' in window) {{
+                    window.speechSynthesis.cancel();
+                    
+                    const speakNow = () => {{
+                        const voices = window.speechSynthesis.getVoices();
+                        const utterance = new SpeechSynthesisUtterance("{clean_reply[:250]}");
+                        
+                        const naturalVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Female')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
+                        
+                        if (naturalVoice) {{
+                            utterance.voice = naturalVoice;
+                        }}
+                        
+                        utterance.pitch = 1.0;
+                        utterance.rate = 1.0;
+                        window.speechSynthesis.speak(utterance);
+                    }};
+
+                    if (window.speechSynthesis.getVoices().length > 0) {{
+                        speakNow();
+                    }} else {{
+                        window.speechSynthesis.onvoiceschanged = speakNow;
+                    }}
+                }}
+            </script>
+            """
+            st.components.v1.html(tts_script, height=0)
+
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
