@@ -1,21 +1,16 @@
 import streamlit as st
+import streamlit as st
 import os
 import json
 import urllib.request
 import urllib.error
 from PIL import Image
-#
-=====================================================
-
-ZENO AI - FUTURISTIC VOICE ASSISTANT
-
-=====================================================
 
 st.set_page_config(
-page_title="ZENO AI | Futuristic Core",
-page_icon="🔮",
-layout="wide",
-initial_sidebar_state="collapsed"
+    page_title="ZENO AI | Futuristic Core",
+    page_icon="🔮",
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
 =====================================================
