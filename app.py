@@ -11,8 +11,8 @@ from PIL import Image
 
 # ----------------- PAGE CONFIG -----------------
 st.set_page_config(
-    page_title="ZENO AI | English Coach",
-    page_icon="🎓",
+    page_title="ZENO AI | Futuristic English Coach",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -40,39 +40,39 @@ def save_data(filename, data):
 # ----------------- PASSWORD STRENGTH CHECK -----------------
 def is_strong_password(password):
     if len(password) < 8:
-        return False, "Password must be at least 8 characters long."
+        return False, "Password minimum 8 characters erbeku."
     if not re.search(r"\d", password):
-        return False, "Password must contain at least one number (0-9)."
+        return False, "Password nalli ondhu number (0-9) erbeku."
     if not re.search(r"[@#$%^&*!_\-+=]", password):
-        return False, "Password must contain at least one special symbol (@, #, $, %, &, *, !)."
+        return False, "Password nalli ondhu special symbol (@, #, $, %, &, *, !) erbeku."
     return True, "Strong Password!"
 
 # ----------------- ROTATING DAILY TOPICS -----------------
 DAILY_TOPICS = [
     {
-        "title": "Making Polite Requests",
-        "lesson": "Instead of saying 'I want water', say 'Could I please have some water?'. It sounds polite and confident in office or restaurants.",
-        "phrase": "Could you please help me with this?"
+        "title": "Polite Workplace Requests",
+        "lesson": "Instead of saying 'Give me that file', say 'Could you please share that file with me?'. It creates immediate respect.",
+        "phrase": "Could you please help me with this task?"
     },
     {
-        "title": "Daily Routine Fluency",
-        "lesson": "Don't say 'Today morning I woke up'. The natural English phrase is 'This morning I woke up'.",
-        "phrase": "This morning I started my work early."
+        "title": "Natural Daily Routine",
+        "lesson": "Avoid saying 'Today morning I came'. Always say 'This morning I came'. It sounds fluent and natural.",
+        "phrase": "This morning I started my project practice."
     },
     {
-        "title": "Ordering Food & Coffee",
-        "lesson": "Use 'I would like to order...' or 'Can I get a cup of tea, please?' instead of demanding directly.",
+        "title": "Food & Cafe Ordering",
+        "lesson": "Don't say 'Give me coffee'. Use 'Can I please get a cup of coffee?' or 'I would like to order a tea'.",
         "phrase": "Can I get a hot coffee with less sugar?"
     },
     {
         "title": "Handling Mistakes Gracefully",
-        "lesson": "When you make a mistake, simply say: 'My apologies, let me rephrase that.'",
-        "phrase": "Excuse me, could you repeat that once?"
+        "lesson": "When a mistake happens, don't say sorry repeatedly. Say: 'My apologies, allow me to clarify that.'",
+        "phrase": "Pardon me, let me rephrase that."
     },
     {
         "title": "Expressing Opinions Confidently",
-        "lesson": "To share ideas at work, use 'In my opinion' or 'From my perspective' rather than just 'I think'.",
-        "phrase": "From my perspective, this solution will save time."
+        "lesson": "Instead of repeatedly saying 'I think', use 'From my perspective' or 'In my view'.",
+        "phrase": "From my perspective, this approach is faster."
     }
 ]
 
@@ -80,93 +80,103 @@ def get_today_topic():
     day_idx = date.today().timetuple().tm_yday % len(DAILY_TOPICS)
     return DAILY_TOPICS[day_idx]
 
-# ----------------- CYBERPUNK STYLING -----------------
+# ----------------- VIBRANT CYBERPUNK COLOR THEME -----------------
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
 
     .stApp {
-        background: radial-gradient(circle at 50% 15%, #090e23 0%, #03050c 100%);
+        background: radial-gradient(circle at 50% 10%, #0d1238 0%, #040614 60%, #010208 100%);
         color: #e0f7fa;
         font-family: 'Rajdhani', sans-serif;
     }
 
-    .enter-card {
-        background: rgba(10, 16, 38, 0.92);
-        border: 2px solid rgba(0, 242, 254, 0.45);
-        box-shadow: 0 0 35px rgba(0, 242, 254, 0.25);
-        border-radius: 22px;
-        padding: 30px 22px;
-        text-align: center;
-        backdrop-filter: blur(12px);
-        margin: 20px auto;
-        max-width: 550px;
-    }
-
+    /* Top Brand Title */
     .zeno-brand {
         font-family: 'Orbitron', sans-serif;
-        font-size: 2.2rem;
+        font-size: 2.4rem;
         font-weight: 900;
-        letter-spacing: 2px;
-        background: linear-gradient(90deg, #00f2fe 0%, #4facfe 50%, #b388ff 100%);
+        letter-spacing: 3px;
+        background: linear-gradient(90deg, #00f2fe 0%, #4facfe 35%, #00ffcc 70%, #ff007f 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 6px;
+        text-shadow: 0 0 25px rgba(0, 242, 254, 0.45);
+        margin-bottom: 4px;
     }
 
+    /* Glowing Interactive Card */
+    .enter-card {
+        background: rgba(13, 20, 50, 0.85);
+        border: 2px solid #00f2fe;
+        box-shadow: 0 0 45px rgba(0, 242, 254, 0.35), inset 0 0 25px rgba(255, 0, 127, 0.25);
+        border-radius: 24px;
+        padding: 35px 25px;
+        text-align: center;
+        backdrop-filter: blur(16px);
+        margin: 25px auto;
+        max-width: 580px;
+    }
+
+    /* Core Orb */
+    .orb-wrapper {
+        display: flex;
+        justify-content: center;
+        margin: 14px 0;
+    }
     .core-orb {
-        width: 55px;
-        height: 55px;
+        width: 70px;
+        height: 70px;
         border-radius: 50%;
-        background: radial-gradient(circle, #00f2fe 10%, #7f00ff 70%, #03050c 100%);
-        box-shadow: 0 0 25px #00f2fe, 0 0 50px rgba(127, 0, 255, 0.6);
-        animation: pulseOrb 2.2s infinite alternate ease-in-out;
-        margin: 10px auto;
+        background: radial-gradient(circle, #00ffcc 10%, #0072ff 50%, #ff007f 90%);
+        box-shadow: 0 0 35px #00f2fe, 0 0 65px rgba(255, 0, 127, 0.75);
+        animation: pulseOrb 2s infinite alternate ease-in-out;
     }
 
     @keyframes pulseOrb {
-        0% { transform: scale(0.95); box-shadow: 0 0 15px #00f2fe; }
-        100% { transform: scale(1.08); box-shadow: 0 0 35px #00f2fe, 0 0 70px #7f00ff; }
+        0% { transform: scale(0.92); box-shadow: 0 0 20px #00f2fe; }
+        100% { transform: scale(1.1); box-shadow: 0 0 50px #00f2fe, 0 0 85px #ff007f; }
     }
 
+    /* Daily Notification Neon Card */
     .daily-card {
-        background: linear-gradient(135deg, rgba(0, 242, 254, 0.15) 0%, rgba(127, 0, 255, 0.2) 100%);
-        border: 1px solid #00f2fe;
-        border-radius: 16px;
-        padding: 14px 18px;
-        margin: 10px 0 14px 0;
-        box-shadow: 0 0 20px rgba(0, 242, 254, 0.18);
+        background: linear-gradient(135deg, rgba(0, 242, 254, 0.18) 0%, rgba(255, 0, 127, 0.22) 100%);
+        border: 1.5px solid #00f2fe;
+        border-radius: 18px;
+        padding: 16px 22px;
+        margin: 12px 0 16px 0;
+        box-shadow: 0 0 25px rgba(0, 242, 254, 0.25);
     }
 
     .daily-title {
         font-family: 'Orbitron', sans-serif;
-        font-size: 1rem;
-        color: #00f2fe;
-        font-weight: bold;
+        font-size: 1.05rem;
+        color: #00ffcc;
+        font-weight: 800;
+        letter-spacing: 1px;
     }
 
+    /* Badges */
     .storage-badge {
-        background: rgba(0, 242, 254, 0.1);
+        background: rgba(0, 242, 254, 0.12);
         border: 1px solid #00f2fe;
         color: #80deea;
         padding: 6px 14px;
-        border-radius: 12px;
-        font-size: 0.85rem;
-        margin-bottom: 10px;
+        border-radius: 14px;
+        font-size: 0.88rem;
         display: inline-block;
+        margin-bottom: 8px;
     }
 
     div[data-testid="stFileUploader"] {
-        background: rgba(10, 16, 38, 0.65);
-        border: 1px dashed #00f2fe;
-        border-radius: 12px;
-        padding: 8px;
+        background: rgba(13, 20, 50, 0.7);
+        border: 1px dashed #00ffcc;
+        border-radius: 14px;
+        padding: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SESSION STATE SETUP & PERSISTENT LOGIN -----------------
-# Read query param if already logged in previously
+# ----------------- SESSION STATE & PERSISTENT LOGIN -----------------
 query_user = st.query_params.get("user", "")
 
 if "logged_in_user" not in st.session_state:
@@ -183,7 +193,7 @@ if "guest_messages" not in st.session_state:
         {"role": "assistant", "content": "Welcome! I am Zeno, your English coach. Speak or type to practice. You have 1 minute of free interaction!"}
     ]
 
-# ----------------- CLEAR & ROBUST API CALLER -----------------
+# ----------------- DYNAMIC LIVE MODEL GROQ API CALLER -----------------
 def call_groq_api_robust(prompt):
     raw_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
     if not raw_key:
@@ -202,7 +212,6 @@ def call_groq_api_robust(prompt):
         "5. Never use markdown symbols like asterisks, hashes, or bullet points."
     )
 
-    models_to_try = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
     last_error = ""
 
     for api_token in keys_list:
@@ -212,9 +221,27 @@ def call_groq_api_robust(prompt):
             "Accept": "application/json",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
+
+        # Auto-fetch live models available for this key
+        models_url = "https://api.groq.com/openai/v1/models"
+        available_models = []
+        try:
+            req_models = urllib.request.Request(models_url, headers=headers, method="GET")
+            with urllib.request.urlopen(req_models, timeout=8) as m_resp:
+                m_data = json.loads(m_resp.read().decode("utf-8"))
+                for m in m_data.get("data", []):
+                    m_id = m.get("id", "")
+                    if not any(x in m_id.lower() for x in ["whisper", "guard", "vision", "orpheus"]):
+                        available_models.append(m_id)
+        except Exception:
+            available_models = ["llama-3.1-8b-instant", "llama3-8b-8192", "gemma2-9b-it"]
+
+        if not available_models:
+            available_models = ["llama-3.1-8b-instant", "llama3-8b-8192"]
+
         chat_url = "https://api.groq.com/openai/v1/chat/completions"
 
-        for model_name in models_to_try:
+        for model_name in available_models:
             payload = {
                 "model": model_name,
                 "messages": [
@@ -232,16 +259,15 @@ def call_groq_api_robust(prompt):
                     return res["choices"][0]["message"]["content"]
             except urllib.error.HTTPError as e:
                 err_text = e.read().decode("utf-8")
-                last_error = f"Groq Error ({e.code}): {err_text}"
+                last_error = f"Groq ({model_name}): {err_text}"
                 continue
             except Exception as e:
-                last_error = f"Connection Error: {str(e)}"
+                last_error = f"Error: {str(e)}"
                 continue
 
     return f"API Issue: {last_error}"
 
 # ----------------- TIME & AUTH DETERMINATION -----------------
-# Once logged in, NEVER ask for login or timer!
 is_logged_in = st.session_state.logged_in_user is not None
 
 if not is_logged_in:
@@ -254,12 +280,12 @@ else:
 if not is_logged_in and time_limit_reached:
     st.markdown("""
     <div class="enter-card">
-        <div style="color: #ff5252; font-weight: bold; letter-spacing: 2px;">⚠️ 1-MINUTE FREE TRIAL COMPLETED</div>
+        <div style="color: #ff007f; font-weight: 800; letter-spacing: 2px;">⚠️ 1-MINUTE FREE TRIAL COMPLETED</div>
         <div class="zeno-brand">⚡ ZENO AI ⚡</div>
-        <p style="color: #e0f7fa; font-size: 1.05rem; margin-top: 5px;">
-            To continue learning and permanently save your history, please <b>Sign In</b> or <b>Create an Account</b> once.
+        <p style="color: #e0f7fa; font-size: 1.1rem; margin-top: 5px;">
+            To continue learning and permanently save your English practice history, please <b>Sign In</b> or <b>Create an Account</b> once.
         </p>
-        <div class="core-orb"></div>
+        <div class="orb-wrapper"><div class="core-orb"></div></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -345,10 +371,10 @@ else:
     # TOP HEADER WITH "➕ NEW CHAT" & LOGOUT
     head_col1, head_col2, head_col3 = st.columns([2.5, 0.8, 0.7])
     with head_col1:
-        st.markdown('<div class="zeno-brand" style="font-size: 1.8rem;">⚡ ZENO AI | ENGLISH COACH ⚡</div>', unsafe_allow_html=True)
+        st.markdown('<div class="zeno-brand">⚡ ZENO AI | ENGLISH COACH ⚡</div>', unsafe_allow_html=True)
         if not is_logged_in:
             st.markdown(f"""
-            <div class="storage-badge" style="border-color: #ff9800; color: #ffb74d;">
+            <div class="storage-badge" style="border-color: #ff007f; color: #ff80bf;">
                 ⏳ <b>Free Practice Time Left:</b> <code>{remaining_sec} seconds</code>
             </div>
             """, unsafe_allow_html=True)
@@ -383,12 +409,12 @@ else:
     <div class="daily-card">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <span class="daily-title">🔔 DAILY NOTIFICATION: {today_topic['title']}</span>
-            <span style="color: #ffeb3b; font-size: 0.85rem; font-weight: bold;">⭐ TODAY'S TOPIC</span>
+            <span style="color: #00ffcc; font-size: 0.85rem; font-weight: bold; text-shadow: 0 0 10px #00ffcc;">⭐ TODAY'S TOPIC</span>
         </div>
-        <p style="color: #e0f7fa; font-size: 1.05rem; margin: 8px 0 4px 0;">
+        <p style="color: #e0f7fa; font-size: 1.08rem; margin: 8px 0 4px 0;">
             {today_topic['lesson']}
         </p>
-        <div style="color: #80deea; font-size: 0.95rem;">
+        <div style="color: #80deea; font-size: 0.98rem;">
             <b>💬 Practice Saying This:</b> <i>"{today_topic['phrase']}"</i>
         </div>
     </div>
@@ -419,10 +445,10 @@ else:
         with c_up1:
             st.markdown("""
             ### 📱 Install Zeno AI as Mobile App:
-            1. Open this website in **Chrome Browser**.
-            2. Tap the **3 dots menu (⋮)** in the top right corner.
-            3. Tap **"Install app"** or **"Add to Home screen"**.
-            4. Done! Zeno AI will open like a real mobile app from your home screen.
+            1. Website na **Chrome Browser** nalli open maadi.
+            2. Top right corner nalli **3 dots menu (⋮)** click maadi.
+            3. **"Install app"** athava **"Add to Home screen"** select maadi.
+            4. Done! Home screen inda real app thara open aaguththe.
             """)
             st.markdown("---")
             up_file = st.file_uploader(
@@ -435,7 +461,7 @@ else:
             if up_file:
                 st.info(f"Selected: **{up_file.name}** ({up_file.type})")
                 if up_file.type.startswith("image/"):
-                    st.image(up_file, width=200)
+                    st.image(up_file, width=220)
                 elif up_file.type.startswith("audio/"):
                     st.audio(up_file)
                 
@@ -483,24 +509,24 @@ else:
 
     # DOCKED MIC BUTTON (TOUCH TO SPEAK)
     mic_html = """
-    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin: 10px 0 5px 0;">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 10px 0 5px 0;">
         <button id="micBtn" style="
-            background: linear-gradient(45deg, #00f2fe, #4facfe);
+            background: linear-gradient(45deg, #00f2fe, #ff007f);
             border: none;
-            color: #04091a;
+            color: #ffffff;
             padding: 10px 24px;
-            border-radius: 22px;
+            border-radius: 24px;
             font-weight: 800;
             font-size: 14px;
             cursor: pointer;
-            box-shadow: 0 0 16px rgba(0, 242, 254, 0.45);
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.55);
             letter-spacing: 1px;
             outline: none;
             display: inline-flex;
             align-items: center;
             gap: 6px;
         ">🎙️ TOUCH TO SPEAK</button>
-        <span id="status" style="color: #80deea; font-size: 12px; font-weight: 600;">Tap to speak or auto-listen</span>
+        <span id="status" style="color: #00ffcc; font-size: 13px; font-weight: 700;">Tap to speak or auto-listen</span>
     </div>
 
     <script>
@@ -526,7 +552,7 @@ else:
                     }
                     recognition.start();
                     status.innerText = "🔴 Listening... Speak clearly now";
-                    micBtn.style.background = "#ff1744";
+                    micBtn.style.background = "#ff0055";
                     micBtn.innerText = "🛑 STOP LISTENING";
                 } catch(e) {}
             }
@@ -537,7 +563,7 @@ else:
                     recognition.stop();
                     sessionStorage.setItem('zeno_handsfree', 'false');
                     status.innerText = "Paused. Tap to speak.";
-                    micBtn.style.background = "linear-gradient(45deg, #00f2fe, #4facfe)";
+                    micBtn.style.background = "linear-gradient(45deg, #00f2fe, #ff007f)";
                     micBtn.innerText = "🎙️ TOUCH TO SPEAK";
                     return;
                 }
@@ -592,7 +618,7 @@ else:
                         if (isHandsFreeActive) startListeningNow();
                     }, 1000);
                 } else {
-                    micBtn.style.background = "linear-gradient(45deg, #00f2fe, #4facfe)";
+                    micBtn.style.background = "linear-gradient(45deg, #00f2fe, #ff007f)";
                     micBtn.innerText = "🎙️ TOUCH TO SPEAK";
                 }
             };
@@ -608,7 +634,7 @@ else:
 
             if (sessionStorage.getItem('zeno_handsfree') === 'true') {
                 isHandsFreeActive = true;
-                micBtn.style.background = "#ff1744";
+                micBtn.style.background = "#ff0055";
                 micBtn.innerText = "🛑 STOP LISTENING";
                 status.innerText = "Zeno talking... mic will auto open.";
             }
@@ -661,7 +687,7 @@ else:
                 """
                 st.components.v1.html(tts_script, height=0)
 
-            # 2. CORE ROBUST ENGLISH TEACHING & COACHING ENGINE
+            # 2. CORE ROBUST ENGLISH TEACHING ENGINE
             else:
                 raw_reply = call_groq_api_robust(user_prompt)
                 clean_reply = raw_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
