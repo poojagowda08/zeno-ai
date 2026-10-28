@@ -488,120 +488,146 @@ else:
                 st.image(msg["image_url"], caption="Generated Illustration")
             st.markdown(msg["content"])
 
-    # DOCKED CLASSIC MIC BUTTON
-    mic_html = """
-    <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 10px 0 6px 0;">
-        <button id="micBtn" type="button" style="
-            background: linear-gradient(45deg, #00f2fe, #ff007f);
-            border: 2px solid #ffffff;
-            color: #ffffff;
-            padding: 10px 26px;
-            border-radius: 26px;
-            font-weight: 800;
-            font-size: 14px;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(0, 242, 254, 0.55);
-            letter-spacing: 1px;
-            outline: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        ">🎙️ TOUCH TO SPEAK</button>
-        <span id="micStatus" style="color: #00ffcc; font-size: 13px; font-weight: 700;">Tap button & speak clearly</span>
-    </div>
-
+    # ================= 100% PARENT-INJECTED TOUCH TO SPEAK MIC =================
+    mic_injection_script = """
     <script>
-        const btn = document.getElementById('micBtn');
-        const status = document.getElementById('micStatus');
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        (function() {
+            const pDoc = window.parent.document;
+            if (pDoc.getElementById('zeno-floating-mic-box')) return;
 
-        if (!SpeechRec) {
-            status.innerText = "Please open this site in Google Chrome.";
-        } else {
+            const box = pDoc.createElement('div');
+            box.id = 'zeno-floating-mic-box';
+            box.style.position = 'fixed';
+            box.style.bottom = '85px';
+            box.style.left = '50%';
+            box.style.transform = 'translateX(-50%)';
+            box.style.zIndex = '999999';
+            box.style.display = 'flex';
+            box.style.alignItems = 'center';
+            box.style.gap = '12px';
+            box.style.background = 'rgba(8, 12, 36, 0.95)';
+            box.style.border = '2px solid #00f2fe';
+            box.style.borderRadius = '30px';
+            box.style.padding = '8px 22px';
+            box.style.boxShadow = '0 0 25px rgba(0, 242, 254, 0.6)';
+
+            const btn = pDoc.createElement('button');
+            btn.id = 'zeno-native-mic-btn';
+            btn.type = 'button';
+            btn.innerText = '🎙️ TOUCH TO SPEAK';
+            btn.style.background = 'linear-gradient(45deg, #00f2fe, #ff007f)';
+            btn.style.border = 'none';
+            btn.style.color = '#ffffff';
+            btn.style.padding = '10px 22px';
+            btn.style.borderRadius = '22px';
+            btn.style.fontWeight = 'bold';
+            btn.style.fontSize = '14px';
+            btn.style.cursor = 'pointer';
+            btn.style.letterSpacing = '1px';
+
+            const status = pDoc.createElement('span');
+            status.id = 'zeno-mic-status-txt';
+            status.innerText = 'Tap to speak English';
+            status.style.color = '#00ffcc';
+            status.style.fontSize = '13px';
+            status.style.fontWeight = 'bold';
+
+            box.appendChild(btn);
+            box.appendChild(status);
+            pDoc.body.appendChild(box);
+
+            const SpeechRec = window.parent.SpeechRecognition || window.parent.webkitSpeechRecognition;
+
+            if (!SpeechRec) {
+                status.innerText = 'Use Google Chrome on PC/Android';
+                btn.style.opacity = '0.5';
+                return;
+            }
+
             const rec = new SpeechRec();
             rec.continuous = false;
             rec.interimResults = false;
             rec.lang = 'en-US';
 
-            let listening = false;
+            let isRecording = false;
 
             btn.onclick = async () => {
-                if (listening) {
+                if (isRecording) {
                     rec.stop();
                     return;
                 }
                 try {
-                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    if (window.parent.navigator.mediaDevices && window.parent.navigator.mediaDevices.getUserMedia) {
+                        const stream = await window.parent.navigator.mediaDevices.getUserMedia({ audio: true });
                         stream.getTracks().forEach(t => t.stop());
                     }
                     rec.start();
-                    listening = true;
-                    status.innerText = "🔴 Listening... Speak now!";
-                    btn.style.background = "#ff0055";
-                    btn.innerText = "🛑 STOP LISTENING";
-                } catch (err) {
-                    status.innerText = "Permission Denied! Click lock icon (🔒) to Allow Mic.";
-                    resetUi();
+                    isRecording = true;
+                    btn.innerText = '🛑 STOP LISTENING';
+                    btn.style.background = '#ff0055';
+                    status.innerText = 'Listening... Speak now!';
+                } catch (e) {
+                    status.innerText = 'Allow Mic permission in Chrome (🔒 lock icon)!';
+                    resetBtn();
                 }
             };
 
             rec.onresult = (e) => {
-                const transcript = e.results[0][0].transcript;
-                status.innerText = "Heard: " + transcript;
+                const text = e.results[0][0].transcript;
+                status.innerText = 'Heard: ' + text;
 
-                const parentDoc = window.parent.document;
-                const textarea = parentDoc.querySelector('textarea[aria-label="Ask Zeno or type \'image: car\' to generate..."]') ||
-                                 parentDoc.querySelector('textarea[data-testid="stChatInputTextArea"]');
+                const textarea = pDoc.querySelector('textarea[aria-label="Ask Zeno or type \'image: car\' to generate..."]') ||
+                                 pDoc.querySelector('textarea[data-testid="stChatInputTextArea"]');
 
                 if (textarea) {
-                    const proto = window.HTMLTextAreaElement.prototype;
-                    const nativeSet = Object.getOwnPropertyDescriptor(proto, "value").set;
-                    nativeSet.call(textarea, transcript);
+                    const proto = window.parent.HTMLTextAreaElement.prototype;
+                    const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+                    nativeSetter.call(textarea, text);
                     textarea.dispatchEvent(new Event('input', { bubbles: true }));
 
                     setTimeout(() => {
-                        const submitBtn = parentDoc.querySelector('button[data-testid="stChatInputSubmitButton"]') ||
-                                          parentDoc.querySelector('button[kind="secondaryFormSubmit"]');
-                        if (submitBtn) {
-                            submitBtn.click();
+                        const sendBtn = pDoc.querySelector('button[data-testid="stChatInputSubmitButton"]') ||
+                                        pDoc.querySelector('button[kind="secondaryFormSubmit"]');
+                        if (sendBtn) {
+                            sendBtn.click();
                         } else {
-                            const enterEvt = new KeyboardEvent('keydown', {
+                            textarea.dispatchEvent(new KeyboardEvent('keydown', {
                                 bubbles: true,
                                 cancelable: true,
                                 key: 'Enter',
                                 code: 'Enter',
                                 keyCode: 13
-                            });
-                            textarea.dispatchEvent(enterEvt);
+                            }));
                         }
-                    }, 400);
+                    }, 350);
                 }
-                resetUi();
+                resetBtn();
             };
 
             rec.onerror = (e) => {
                 if (e.error === 'not-allowed') {
-                    status.innerText = "Microphone blocked in Chrome. Please allow it!";
+                    status.innerText = 'Mic blocked! Allow in Chrome settings';
+                } else if (e.error === 'no-speech') {
+                    status.innerText = 'No voice detected. Tap to retry';
                 } else {
-                    status.innerText = "Tap again to speak.";
+                    status.innerText = 'Tap to speak English';
                 }
-                resetUi();
+                resetBtn();
             };
 
             rec.onend = () => {
-                resetUi();
+                resetBtn();
             };
 
-            function resetUi() {
-                listening = false;
-                btn.style.background = "linear-gradient(45deg, #00f2fe, #ff007f)";
-                btn.innerText = "🎙️ TOUCH TO SPEAK";
+            function resetBtn() {
+                isRecording = false;
+                btn.innerText = '🎙️ TOUCH TO SPEAK';
+                btn.style.background = 'linear-gradient(45deg, #00f2fe, #ff007f)';
             }
-        }
+        })();
     </script>
     """
-    st.components.v1.html(mic_html, height=55)
+    st.components.v1.html(mic_injection_script, height=0)
 
     # CHAT INPUT BOX
     user_prompt = st.chat_input("Ask Zeno or type 'image: car' to generate...")
