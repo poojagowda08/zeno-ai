@@ -165,9 +165,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SESSION STATE SETUP -----------------
+# ----------------- SESSION STATE SETUP & PERSISTENT LOGIN -----------------
+# Read query param if already logged in previously
+query_user = st.query_params.get("user", "")
+
 if "logged_in_user" not in st.session_state:
-    st.session_state.logged_in_user = None
+    st.session_state.logged_in_user = query_user if query_user else None
 
 if "guest_start_time" not in st.session_state:
     st.session_state.guest_start_time = time.time()
@@ -180,13 +183,13 @@ if "guest_messages" not in st.session_state:
         {"role": "assistant", "content": "Welcome! I am Zeno, your English coach. Speak or type to practice. You have 1 minute of free interaction!"}
     ]
 
-# ----------------- MULTI-KEY HIGH-CONCURRENCY API CALLER -----------------
-raw_keys = st.secrets.get("GROQ_API_KEYS", "") or st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
-API_KEYS = [k.strip() for k in raw_keys.split(",") if k.strip()]
-
+# ----------------- CLEAR & ROBUST API CALLER -----------------
 def call_groq_api_robust(prompt):
-    if not API_KEYS:
-        return "GROQ_API_KEY Missing! Streamlit Secrets nalli add maadi."
+    raw_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+    if not raw_key:
+        return "GROQ_API_KEY Missing! Streamlit Secrets nalli GROQ_API_KEY add maadi."
+
+    keys_list = [k.strip().replace('"', '').replace("'", "") for k in raw_key.split(",") if k.strip()]
 
     system_instruction = (
         "You are Zeno, a dedicated, highly skilled English language coach and tutor. "
@@ -200,17 +203,16 @@ def call_groq_api_robust(prompt):
     )
 
     models_to_try = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
+    last_error = ""
 
-    # Iterate through keys and models with retry to prevent server crash
-    for key in API_KEYS:
-        clean_token = key.replace('"', '').replace("'", "")
-        chat_url = "https://api.groq.com/openai/v1/chat/completions"
+    for api_token in keys_list:
         headers = {
-            "Authorization": f"Bearer {clean_token}",
+            "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json",
             "Accept": "application/json",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
+        chat_url = "https://api.groq.com/openai/v1/chat/completions"
 
         for model_name in models_to_try:
             payload = {
@@ -222,38 +224,40 @@ def call_groq_api_robust(prompt):
                 "temperature": 0.5
             }
             body_data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(chat_url, data=body_data, headers=headers, method="POST")
 
-            # Try up to 2 times with slight delay on rate limits
-            for attempt in range(2):
-                req = urllib.request.Request(chat_url, data=body_data, headers=headers, method="POST")
-                try:
-                    with urllib.request.urlopen(req, timeout=12) as response:
-                        res = json.loads(response.read().decode("utf-8"))
-                        return res["choices"][0]["message"]["content"]
-                except urllib.error.HTTPError as e:
-                    # On Rate Limit (429) or Server Overload (503), wait 1 sec or switch key
-                    if e.code in [429, 503]:
-                        time.sleep(1)
-                        continue
-                    break
-                except Exception:
-                    break
+            try:
+                with urllib.request.urlopen(req, timeout=15) as response:
+                    res = json.loads(response.read().decode("utf-8"))
+                    return res["choices"][0]["message"]["content"]
+            except urllib.error.HTTPError as e:
+                err_text = e.read().decode("utf-8")
+                last_error = f"Groq Error ({e.code}): {err_text}"
+                continue
+            except Exception as e:
+                last_error = f"Connection Error: {str(e)}"
+                continue
 
-    return "Servers are experiencing high demand. Please repeat your sentence in a moment!"
+    return f"API Issue: {last_error}"
 
-# ----------------- 1-MINUTE TIME CALCULATION -----------------
-elapsed_seconds = int(time.time() - st.session_state.guest_start_time)
-is_guest = st.session_state.logged_in_user is None
-time_limit_reached = is_guest and (elapsed_seconds >= 60)
+# ----------------- TIME & AUTH DETERMINATION -----------------
+# Once logged in, NEVER ask for login or timer!
+is_logged_in = st.session_state.logged_in_user is not None
 
-# ----------------- AUTHENTICATION OVERLAY -----------------
-if time_limit_reached:
+if not is_logged_in:
+    elapsed_seconds = int(time.time() - st.session_state.guest_start_time)
+    time_limit_reached = (elapsed_seconds >= 60)
+else:
+    time_limit_reached = False
+
+# ----------------- AUTHENTICATION OVERLAY (ONLY FOR GUESTS AFTER 1 MIN) -----------------
+if not is_logged_in and time_limit_reached:
     st.markdown("""
     <div class="enter-card">
         <div style="color: #ff5252; font-weight: bold; letter-spacing: 2px;">⚠️ 1-MINUTE FREE TRIAL COMPLETED</div>
         <div class="zeno-brand">⚡ ZENO AI ⚡</div>
         <p style="color: #e0f7fa; font-size: 1.05rem; margin-top: 5px;">
-            To continue learning and save your English practice history, please <b>Sign In</b> or <b>Create an Account</b>.
+            To continue learning and permanently save your history, please <b>Sign In</b> or <b>Create an Account</b> once.
         </p>
         <div class="core-orb"></div>
     </div>
@@ -273,6 +277,7 @@ if time_limit_reached:
                 saved_pwd = user_record["password"] if isinstance(user_record, dict) else user_record
                 if saved_pwd == login_pwd:
                     st.session_state.logged_in_user = login_id
+                    st.query_params["user"] = login_id
                     st.session_state.spoken_daily_topic = False
                     
                     all_histories = load_data(HISTORY_FILE, {})
@@ -282,7 +287,7 @@ if time_limit_reached:
                         all_histories[login_id].extend(st.session_state.guest_messages[1:])
                     save_data(HISTORY_FILE, all_histories)
                     
-                    st.success("Access Granted! Welcome back...")
+                    st.success("Access Granted! Permanently logged in.")
                     st.rerun()
                 else:
                     st.error("Invalid Password!")
@@ -310,6 +315,7 @@ if time_limit_reached:
                 users_db[new_id] = {"password": new_pwd}
                 save_data(USERS_FILE, users_db)
                 st.session_state.logged_in_user = new_id
+                st.query_params["user"] = new_id
                 st.session_state.spoken_daily_topic = False
 
                 all_histories = load_data(HISTORY_FILE, {})
@@ -324,7 +330,7 @@ else:
     all_histories = load_data(HISTORY_FILE, {})
     today_topic = get_today_topic()
 
-    if is_guest:
+    if not is_logged_in:
         current_user = "Guest (Free Trial)"
         user_messages = st.session_state.guest_messages
         remaining_sec = max(0, 60 - elapsed_seconds)
@@ -336,14 +342,14 @@ else:
             ]
         user_messages = all_histories[current_user]
 
-    # TOP HEADER
-    head_col1, head_col2 = st.columns([3, 1])
+    # TOP HEADER WITH "➕ NEW CHAT" & LOGOUT
+    head_col1, head_col2, head_col3 = st.columns([2.5, 0.8, 0.7])
     with head_col1:
         st.markdown('<div class="zeno-brand" style="font-size: 1.8rem;">⚡ ZENO AI | ENGLISH COACH ⚡</div>', unsafe_allow_html=True)
-        if is_guest:
+        if not is_logged_in:
             st.markdown(f"""
             <div class="storage-badge" style="border-color: #ff9800; color: #ffb74d;">
-                ⏳ <b>Free Practice Time Left:</b> <code>{remaining_sec} seconds</code> (Sign In after 1 min)
+                ⏳ <b>Free Practice Time Left:</b> <code>{remaining_sec} seconds</code>
             </div>
             """, unsafe_allow_html=True)
         else:
@@ -352,10 +358,22 @@ else:
                 💾 <b>History:</b> <code>{HISTORY_FILE}</code> | <b>User:</b> <code>{current_user}</code> | <b>Saved:</b> {len(user_messages)} msgs
             </div>
             """, unsafe_allow_html=True)
+
     with head_col2:
-        if not is_guest:
+        if st.button("➕ New Chat", use_container_width=True):
+            new_welcome = f"Hello {current_user}! Starting a fresh chat. What would you like to practice now?"
+            if not is_logged_in:
+                st.session_state.guest_messages = [{"role": "assistant", "content": new_welcome}]
+            else:
+                all_histories[current_user] = [{"role": "assistant", "content": new_welcome}]
+                save_data(HISTORY_FILE, all_histories)
+            st.rerun()
+
+    with head_col3:
+        if is_logged_in:
             if st.button("🚪 Sign Out", use_container_width=True):
                 st.session_state.logged_in_user = None
+                st.query_params.clear()
                 st.session_state.guest_start_time = time.time()
                 st.session_state.spoken_daily_topic = False
                 st.rerun()
@@ -379,7 +397,7 @@ else:
     # AUTOMATIC VOICE EXPLANATION ON LOAD
     if not st.session_state.spoken_daily_topic:
         st.session_state.spoken_daily_topic = True
-        greeting_name = "there" if is_guest else current_user
+        greeting_name = "there" if not is_logged_in else current_user
         spoken_daily = f"Hello {greeting_name}! Today's English topic is {today_topic['title']}. {today_topic['lesson']} Try repeating after me: {today_topic['phrase']}"
         st.components.v1.html(f"""
         <script>
@@ -390,7 +408,7 @@ else:
                 utter.onend = () => {{
                     window.dispatchEvent(new CustomEvent('zeno_speech_ended'));
                 }};
-                window.speechSynthesis.speak(utterance);
+                window.speechSynthesis.speak(utter);
             }}
         </script>
         """, height=0)
@@ -404,7 +422,7 @@ else:
             1. Open this website in **Chrome Browser**.
             2. Tap the **3 dots menu (⋮)** in the top right corner.
             3. Tap **"Install app"** or **"Add to Home screen"**.
-            4. Done! Zeno AI will now open like a real mobile app from your home screen.
+            4. Done! Zeno AI will open like a real mobile app from your home screen.
             """)
             st.markdown("---")
             up_file = st.file_uploader(
@@ -430,7 +448,7 @@ else:
                     bot_reply = bot_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
                     
                     user_messages.append({"role": "assistant", "content": bot_reply})
-                    if not is_guest:
+                    if is_logged_in:
                         all_histories[current_user] = user_messages
                         save_data(HISTORY_FILE, all_histories)
                     st.rerun()
@@ -444,7 +462,7 @@ else:
             st.download_button("📥 Export My Chat (.JSON)", data=chat_json_str, file_name=f"{current_user}_chat_history.json", mime="application/json", use_container_width=True)
 
             if st.button("🗑️ Reset Chat History", use_container_width=True):
-                if is_guest:
+                if not is_logged_in:
                     st.session_state.guest_messages = [
                         {"role": "assistant", "content": "Memory refreshed. Ready to practice speaking!"}
                     ]
@@ -604,7 +622,7 @@ else:
 
     if user_prompt:
         user_messages.append({"role": "user", "content": user_prompt})
-        if not is_guest:
+        if is_logged_in:
             all_histories[current_user] = user_messages
             save_data(HISTORY_FILE, all_histories)
 
@@ -625,7 +643,7 @@ else:
                 st.markdown(reply_txt)
 
                 user_messages.append({"role": "assistant", "content": reply_txt, "image_url": gen_image_url})
-                if not is_guest:
+                if is_logged_in:
                     all_histories[current_user] = user_messages
                     save_data(HISTORY_FILE, all_histories)
 
@@ -650,7 +668,7 @@ else:
                 st.markdown(clean_reply)
 
                 user_messages.append({"role": "assistant", "content": clean_reply})
-                if not is_guest:
+                if is_logged_in:
                     all_histories[current_user] = user_messages
                     save_data(HISTORY_FILE, all_histories)
 
