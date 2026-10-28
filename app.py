@@ -24,7 +24,6 @@ st.markdown("""
         font-family: 'Rajdhani', sans-serif;
     }
 
-    /* Cinematic Welcome Card */
     .enter-card {
         background: rgba(10, 16, 38, 0.85);
         border: 2px solid rgba(0, 242, 254, 0.45);
@@ -35,12 +34,6 @@ st.markdown("""
         backdrop-filter: blur(12px);
         margin: 40px auto;
         max-width: 600px;
-        animation: fadeIn 1s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(15px); }
-        to { opacity: 1; transform: translateY(0); }
     }
 
     .zeno-brand {
@@ -67,7 +60,6 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
-    /* Glowing Pulsing Core */
     .orb-wrapper {
         display: flex;
         justify-content: center;
@@ -194,7 +186,7 @@ else:
             st.audio(uploaded_audio)
 
     # Mic Component
-    st.components.v1.html("""
+    mic_html = """
     <div style="text-align: center; margin: 10px 0 15px 0;">
         <button id="micBtn" style="
             background: linear-gradient(45deg, #00f2fe, #4facfe);
@@ -211,7 +203,6 @@ else:
         ">🎙️ TOUCH TO SPEAK</button>
         <div id="status" style="color: #80deea; font-size: 13px; margin-top: 8px;">Tap button to speak your command</div>
     </div>
-
     <script>
         const micBtn = document.getElementById('micBtn');
         const status = document.getElementById('status');
@@ -222,7 +213,6 @@ else:
             recognition.continuous = false;
             recognition.interimResults = false;
             recognition.lang = 'en-IN';
-
             let isListening = false;
 
             micBtn.onclick = () => {
@@ -243,4 +233,85 @@ else:
 
             recognition.onresult = (event) => {
                 const text = event.results[0][0].transcript;
-                status.innerText = "Heard: " + text
+                status.innerText = "Heard: " + text;
+                const doc = window.parent.document;
+                const textarea = doc.querySelector('textarea[aria-label="Ask Zeno anything..."]');
+                if (textarea) {
+                    textarea.value = text;
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    setTimeout(() => {
+                        const sendBtn = doc.querySelector('button[data-testid="stBaseButton-secondary"]') || 
+                                        doc.querySelector('button[kind="secondaryFormSubmit"]');
+                        if (sendBtn) sendBtn.click();
+                    }, 300);
+                }
+            };
+
+            recognition.onerror = () => {
+                status.innerText = "Mic Error. Tap to retry";
+                resetBtn();
+            };
+
+            recognition.onend = () => {
+                resetBtn();
+            };
+
+            function resetBtn() {
+                isListening = false;
+                micBtn.style.background = "linear-gradient(45deg, #00f2fe, #4facfe)";
+                micBtn.innerText = "🎙️ TOUCH TO SPEAK";
+            }
+        } else {
+            status.innerText = "Voice Recognition requires Chrome browser.";
+        }
+    </script>
+    """
+    st.components.v1.html(mic_html, height=90)
+
+    # Chat Messages
+    for msg in st.session_state.messages:
+        avatar = "🔮" if msg["role"] == "assistant" else "👤"
+        with st.chat_message(msg["role"], avatar=avatar):
+            st.markdown(msg["content"])
+
+    # Chat Input
+    user_prompt = st.chat_input("Ask Zeno anything...")
+
+    if user_prompt:
+        st.session_state.messages.append({"role": "user", "content": user_prompt})
+        with st.chat_message("user", avatar="👤"):
+            st.markdown(user_prompt)
+
+        with st.chat_message("assistant", avatar="🔮"):
+            if not groq_key:
+                st.error("GROQ_API_KEY Missing! Streamlit Secrets nalli GROQ_API_KEY add maadi.")
+            else:
+                raw_reply = call_groq_api(user_prompt, groq_key)
+                clean_reply = raw_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
+                st.markdown(clean_reply)
+                st.session_state.messages.append({"role": "assistant", "content": clean_reply})
+
+                # Speech Output via JS Injection
+                spoken_text = clean_reply[:250].replace("\\", "")
+                tts_js = f"""
+                <script>
+                    if ('speechSynthesis' in window) {{
+                        window.speechSynthesis.cancel();
+                        const speakNow = () => {{
+                            const voices = window.speechSynthesis.getVoices();
+                            const utterance = new SpeechSynthesisUtterance("{spoken_text}");
+                            const targetVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Female')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
+                            if (targetVoice) utterance.voice = targetVoice;
+                            utterance.pitch = 1.0;
+                            utterance.rate = 1.0;
+                            window.speechSynthesis.speak(utterance);
+                        }};
+                        if (window.speechSynthesis.getVoices().length > 0) {{
+                            speakNow();
+                        }} else {{
+                            window.speechSynthesis.onvoiceschanged = speakNow;
+                        }}
+                    }}
+                </script>
+                """
+                st.components.v1.html(tts_js, height=0)
