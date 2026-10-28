@@ -110,10 +110,11 @@ def call_groq_api(prompt, api_token):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
-    fallback_models = ["gemma2-9b-it", "llama3-70b-8192", "mixtral-8x7b-32768"]
+    # Only currently supported official Groq models
+    supported_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
 
     last_error = ""
-    for model_name in fallback_models:
+    for model_name in supported_models:
         payload = {
             "model": model_name,
             "messages": [
@@ -139,7 +140,7 @@ def call_groq_api(prompt, api_token):
         except urllib.error.HTTPError as e:
             error_details = e.read().decode("utf-8")
             last_error = f"Groq Server Error ({e.code}): {error_details}"
-            if any(k in error_details for k in ["model_terms_required", "model_decommissioned", "model_not_found"]):
+            if "model_decommissioned" in error_details or "model_not_found" in error_details:
                 continue
             return last_error
         except Exception as e:
