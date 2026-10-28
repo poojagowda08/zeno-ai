@@ -4,7 +4,7 @@ import json
 import urllib.request
 import urllib.error
 from PIL import Image
-
+#
 =====================================================
 
 ZENO AI - FUTURISTIC VOICE ASSISTANT
