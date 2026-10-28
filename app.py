@@ -97,20 +97,19 @@ if "messages" not in st.session_state:
 
 # ----------------- GROQ API FUNCTION (NO EXTERNAL PACKAGE NEEDED) -----------------
 groq_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
-
 def call_groq_api(prompt, api_token):
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_token.strip()}",
         "Content-Type": "application/json",
-        "User-Agent": "ZenoAI/1.0"
+        "User-Agent": "Mozilla/5.0"
     }
     body = {
-        "model": "llama-3.3-70b-versatile",
+        "model": "llama-3.1-8b-instant",  # ಅತ್ಯಂತ ವೇಗವಾದ ಮತ್ತು ಲಭ್ಯವಿರುವ ಸ್ಟೇಬಲ್ ಮಾಡೆಲ್
         "messages": [
             {
                 "role": "system",
-                "content": "You are Zeno, a hyper-intelligent and friendly voice assistant. Keep answers brief, natural and conversational (1 to 2 short sentences). Do not use markdown like asterisks or hashes."
+                "content": "You are Zeno, a friendly AI voice assistant. Keep answers brief (1-2 short sentences) and clear without markdown."
             },
             {"role": "user", "content": prompt}
         ]
@@ -120,6 +119,8 @@ def call_groq_api(prompt, api_token):
     with urllib.request.urlopen(req, timeout=15) as response:
         result = json.loads(response.read().decode("utf-8"))
         return result["choices"][0]["message"]["content"]
+
+            
 
 # ----------------- SCREEN 1: CLICK TO ENTER -----------------
 if not st.session_state.app_entered:
