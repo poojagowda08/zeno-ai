@@ -1,11 +1,12 @@
 import streamlit as st
 import os
+import json
+import urllib.request
 from PIL import Image
-from groq import Groq
 
 # ----------------- PAGE CONFIG -----------------
 st.set_page_config(
-    page_title="ZENO AI |Futuristi c Core",
+    page_title="ZENO AI | Futuristic Core",
     page_icon="🔮",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -94,13 +95,31 @@ if "messages" not in st.session_state:
         {"role": "assistant", "content": "Zeno core systems active. Ask me anything!"}
     ]
 
-# ----------------- GROQ CLIENT SETUP -----------------
+# ----------------- GROQ API FUNCTION (NO EXTERNAL PACKAGE NEEDED) -----------------
 groq_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
-client = Groq(api_key=groq_key) if groq_key else None
 
-SYSTEM_INSTRUCTION = """You are Zeno, a hyper-intelligent, polite, and futuristic AI assistant.
-Keep spoken replies brief, crisp, and conversational (1 to 2 short sentences).
-Never use markdown symbols like asterisks (*) or hashes (#) so the speech engine reads it naturally."""
+def call_groq_api(prompt, api_token):
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_token.strip()}",
+        "Content-Type": "application/json",
+        "User-Agent": "ZenoAI/1.0"
+    }
+    body = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are Zeno, a hyper-intelligent and friendly voice assistant. Keep answers brief, natural and conversational (1 to 2 short sentences). Do not use markdown like asterisks or hashes."
+            },
+            {"role": "user", "content": prompt}
+        ]
+    }
+    data = json.dumps(body).encode("utf-8")
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    with urllib.request.urlopen(req, timeout=15) as response:
+        result = json.loads(response.read().decode("utf-8"))
+        return result["choices"][0]["message"]["content"]
 
 # ----------------- SCREEN 1: CLICK TO ENTER -----------------
 if not st.session_state.app_entered:
@@ -115,7 +134,7 @@ if not st.session_state.app_entered:
             <div class="core-orb"></div>
         </div>
         <p style="color: #90caf9; font-size: 0.92rem; margin-bottom: 25px;">
-            Ultra Fast Response • Zero Server Delays • Voice Synthesis
+            Touch-to-Speak • Direct Lightning Synthesis • Zero Delays
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -214,7 +233,7 @@ else:
                 }
             };
 
-            recognition.onerror = (e) => {
+            recognition.onerror = () => {
                 status.innerText = "Mic Error. Tap to retry";
                 resetBtn();
             };
@@ -249,19 +268,12 @@ else:
             st.markdown(user_prompt)
 
         with st.chat_message("assistant", avatar="🔮"):
-            if not client:
+            if not groq_key:
                 st.error("GROQ_API_KEY Missing! Streamlit Secrets nalli GROQ_API_KEY add maadi.")
             else:
                 try:
-                    chat_completion = client.chat.completions.create(
-                        messages=[
-                            {"role": "system", "content": SYSTEM_INSTRUCTION},
-                            {"role": "user", "content": user_prompt}
-                        ],
-                        model="llama-3.3-70b-versatile",
-                    )
-
-                    clean_reply = chat_completion.choices[0].message.content.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
+                    clean_reply = call_groq_api(user_prompt, groq_key)
+                    clean_reply = clean_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
                     st.markdown(clean_reply)
                     st.session_state.messages.append({"role": "assistant", "content": clean_reply})
 
