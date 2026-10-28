@@ -107,17 +107,13 @@ def call_groq_api(prompt, api_token):
         "Authorization": f"Bearer {clean_token}",
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
-    # Only Groq's active production models
-    production_models = [
-        "llama-3.3-70b-versatile",
-        "gemma2-9b-it"
-    ]
+    fallback_models = ["gemma2-9b-it", "llama3-70b-8192", "mixtral-8x7b-32768"]
 
     last_error = ""
-    for model_name in production_models:
+    for model_name in fallback_models:
         payload = {
             "model": model_name,
             "messages": [
@@ -143,7 +139,7 @@ def call_groq_api(prompt, api_token):
         except urllib.error.HTTPError as e:
             error_details = e.read().decode("utf-8")
             last_error = f"Groq Server Error ({e.code}): {error_details}"
-            if any(k in error_details for k in ["model_decommissioned", "model_not_found", "model_terms_required"]):
+            if any(k in error_details for k in ["model_terms_required", "model_decommissioned", "model_not_found"]):
                 continue
             return last_error
         except Exception as e:
@@ -279,4 +275,52 @@ else:
         }
     </script>
     """
-    st.components.v1.html(mic
+    st.components.v1.html(mic_html, height=90)
+
+    # Chat Messages
+    for msg in st.session_state.messages:
+        avatar = "🔮" if msg["role"] == "assistant" else "👤"
+        with st.chat_message(msg["role"], avatar=avatar):
+            st.markdown(msg["content"])
+
+    # Chat Input
+    user_prompt = st.chat_input("Ask Zeno anything...")
+
+    if user_prompt:
+        st.session_state.messages.append({"role": "user", "content": user_prompt})
+        with st.chat_message("user", avatar="👤"):
+            st.markdown(user_prompt)
+
+        with st.chat_message("assistant", avatar="🔮"):
+            if not groq_key:
+                st.error("GROQ_API_KEY Missing! Streamlit Secrets nalli GROQ_API_KEY add maadi.")
+            else:
+                raw_reply = call_groq_api(user_prompt, groq_key)
+                clean_reply = raw_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
+                st.markdown(clean_reply)
+                st.session_state.messages.append({"role": "assistant", "content": clean_reply})
+
+                # Speech Output
+                spoken_text = clean_reply[:250].replace("\\", "")
+                tts_js = f"""
+                <script>
+                    if ('speechSynthesis' in window) {{
+                        window.speechSynthesis.cancel();
+                        const speakNow = () => {{
+                            const voices = window.speechSynthesis.getVoices();
+                            const utterance = new SpeechSynthesisUtterance("{spoken_text}");
+                            const targetVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Female')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
+                            if (targetVoice) utterance.voice = targetVoice;
+                            utterance.pitch = 1.0;
+                            utterance.rate = 1.0;
+                            window.speechSynthesis.speak(utterance);
+                        }};
+                        if (window.speechSynthesis.getVoices().length > 0) {{
+                            speakNow();
+                        }} else {{
+                            window.speechSynthesis.onvoiceschanged = speakNow;
+                        }}
+                    }}
+                </script>
+                """
+                st.components.v1.html(tts_js, height=0)
