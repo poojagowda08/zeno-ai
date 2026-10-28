@@ -110,8 +110,12 @@ def call_groq_api(prompt, api_token):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
     
-    # Supported Groq Models to attempt sequentially
-    models_to_try = ["llama-3.2-3b-preview", "llama3-8b-8192", "mixtral-8x7b-32768"]
+    # Active, non-deprecated Groq production models
+    models_to_try = [
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+        "meta-llama/llama-guard-3-8b"
+    ]
     
     last_error = ""
     for model_name in models_to_try:
@@ -120,7 +124,7 @@ def call_groq_api(prompt, api_token):
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are Zeno, a hyper-intelligent, polite, and friendly voice assistant. Keep answers brief, natural and conversational (1 to 2 short sentences). Never use markdown like asterisks or hashes."
+                    "content": "You are Zeno, a hyper-intelligent, polite, and friendly voice assistant. Keep answers brief, natural and conversational (1 to 2 short sentences). Never use asterisks or markdown symbols."
                 },
                 {
                     "role": "user",
@@ -140,8 +144,7 @@ def call_groq_api(prompt, api_token):
         except urllib.error.HTTPError as e:
             error_details = e.read().decode("utf-8")
             last_error = f"Groq Server Error ({e.code}): {error_details}"
-            # If model is not found, it automatically falls back to the next model in the list
-            if "model_not_found" in error_details:
+            if "model_decommissioned" in error_details or "model_not_found" in error_details:
                 continue
             return last_error
         except Exception as e:
