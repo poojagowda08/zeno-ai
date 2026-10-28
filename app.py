@@ -10,189 +10,185 @@ st.set_page_config(
     page_title="ZENO AI | Futuristic Core",
     page_icon="🔮",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # ----------------- ADVANCED CYBERPUNK STYLING -----------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
 
     .stApp {
-        background: radial-gradient(circle at 50% 10%, #0d122b 0%, #05070e 100%);
+        background: radial-gradient(circle at 50% 15%, #090e23 0%, #03050c 100%);
         color: #e0f7fa;
         font-family: 'Rajdhani', sans-serif;
     }
 
-    /* Cinematic Intro Box */
-    .intro-card {
-        background: rgba(12, 18, 42, 0.75);
-        border: 1px solid rgba(0, 242, 254, 0.4);
-        box-shadow: 0 0 30px rgba(0, 242, 254, 0.2);
-        border-radius: 20px;
-        padding: 40px 20px;
+    /* Cinematic Welcome Card */
+    .enter-card {
+        background: rgba(10, 16, 38, 0.85);
+        border: 2px solid rgba(0, 242, 254, 0.45);
+        box-shadow: 0 0 40px rgba(0, 242, 254, 0.25), inset 0 0 20px rgba(127, 0, 255, 0.2);
+        border-radius: 24px;
+        padding: 45px 25px;
         text-align: center;
-        backdrop-filter: blur(10px);
+        backdrop-filter: blur(12px);
         margin: 40px auto;
-        max-width: 650px;
+        max-width: 600px;
+        animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     .zeno-brand {
         font-family: 'Orbitron', sans-serif;
-        font-size: 2.6rem;
+        font-size: 2.8rem;
         font-weight: 900;
         letter-spacing: 3px;
-        background: linear-gradient(90deg, #00f2fe 0%, #4facfe 50%, #7f00ff 100%);
+        background: linear-gradient(90deg, #00f2fe 0%, #4facfe 50%, #b388ff 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 
-    .status-badge {
+    .status-pill {
         display: inline-block;
-        padding: 4px 14px;
-        border-radius: 12px;
-        background: rgba(0, 242, 254, 0.1);
+        padding: 6px 18px;
+        border-radius: 20px;
+        background: rgba(0, 242, 254, 0.12);
         border: 1px solid #00f2fe;
         color: #00f2fe;
         font-size: 0.85rem;
         font-weight: bold;
-        letter-spacing: 1.5px;
+        letter-spacing: 2px;
         margin-bottom: 25px;
     }
 
-    /* Glowing Core Orb */
+    /* Glowing Pulsing Core */
     .orb-wrapper {
         display: flex;
         justify-content: center;
-        margin: 20px 0;
+        margin: 25px 0;
     }
 
     .core-orb {
-        width: 100px;
-        height: 100px;
+        width: 105px;
+        height: 105px;
         border-radius: 50%;
-        background: radial-gradient(circle, #00f2fe 10%, #7f00ff 70%, #05070e 100%);
-        box-shadow: 0 0 30px #00f2fe, 0 0 60px rgba(127, 0, 255, 0.7);
-        animation: pulseCore 2.5s infinite alternate ease-in-out;
+        background: radial-gradient(circle, #00f2fe 10%, #7f00ff 70%, #03050c 100%);
+        box-shadow: 0 0 35px #00f2fe, 0 0 70px rgba(127, 0, 255, 0.7);
+        animation: pulseOrb 2.2s infinite alternate ease-in-out;
     }
 
-    @keyframes pulseCore {
-        0% { transform: scale(0.95); box-shadow: 0 0 20px #00f2fe; }
-        100% { transform: scale(1.06); box-shadow: 0 0 45px #00f2fe, 0 0 75px #7f00ff; }
+    @keyframes pulseOrb {
+        0% { transform: scale(0.94); box-shadow: 0 0 20px #00f2fe; }
+        100% { transform: scale(1.08); box-shadow: 0 0 50px #00f2fe, 0 0 85px #7f00ff; }
     }
 
-    /* Sidebar Styling */
     section[data-testid="stSidebar"] {
-        background-color: #070a17;
-        border-right: 1px solid rgba(0, 242, 254, 0.2);
+        background-color: #060914;
+        border-right: 1px solid rgba(0, 242, 254, 0.25);
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ----------------- SESSION STATE -----------------
-if "app_launched" not in st.session_state:
-    st.session_state.app_launched = False
+if "app_entered" not in st.session_state:
+    st.session_state.app_entered = False
 
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "Zeno core systems operational. How may I assist you today?"}
+        {"role": "assistant", "content": "Zeno core systems active. Tap mic or ask me anything!"}
     ]
 
 # ----------------- API SETUP -----------------
-api_key = ""
-if "GEMINI_API_KEY" in st.secrets:
-    api_key = st.secrets["GEMINI_API_KEY"]
-elif "GEMINI_API_KEY" in os.environ:
-    api_key = os.environ["GEMINI_API_KEY"]
-
+api_key = st.secrets.get("GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "")
 client = genai.Client(api_key=api_key) if api_key else None
 
 SYSTEM_INSTRUCTION = """
 You are Zeno, a hyper-intelligent, polite, and futuristic AI assistant.
-Keep spoken replies brief, crisp, and conversational (1 to 3 short sentences).
-Do not use markdown symbols like asterisks (*) or hashes (#) so the speech engine reads it cleanly.
+Keep spoken replies brief, crisp, and conversational (1 to 2 short sentences).
+Never use markdown symbols like asterisks (*) or hashes (#) so the speech synthesizer reads it naturally.
 """
 
-# ----------------- SCREEN 1: DEMO / SPLASH SCREEN -----------------
-if not st.session_state.app_launched:
+# ----------------- SCREEN 1: CLICK TO ENTER SCREEN -----------------
+if not st.session_state.app_entered:
     st.markdown("""
-    <div class="intro-card">
-        <div class="status-badge">SYSTEMS ONLINE • V3.2</div>
+    <div class="enter-card">
+        <div class="status-pill">NEURAL CORE READY</div>
         <div class="zeno-brand">⚡ ZENO AI ⚡</div>
-        <p style="color: #80deea; font-size: 1.1rem; margin-bottom: 20px;">
-            Next-Gen Multimodal Voice & Cognitive Interface
+        <p style="color: #80deea; font-size: 1.15rem; margin-top: 5px;">
+            Next-Gen Multimodal Voice Interface
         </p>
         <div class="orb-wrapper">
             <div class="core-orb"></div>
         </div>
-        <p style="color: #90caf9; font-size: 0.95rem; margin-top: 15px;">
-            Supports Voice Interaction, Multimodal Vision, Document Auditing & Realtime Synthesis.
+        <p style="color: #90caf9; font-size: 0.92rem; margin-bottom: 25px;">
+            Touch-to-Speak • Vision AI • PDF Document Analysis
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1, 1.2, 1])
+    col1, col2, col3 = st.columns([1, 1.4, 1])
     with col2:
-        if st.button("🚀 INITIALIZE & LAUNCH ZENO", use_container_width=True):
-            st.session_state.app_launched = True
+        if st.button("✨ CLICK TO ENTER ZENO AI", use_container_width=True):
+            st.session_state.app_entered = True
             st.rerun()
 
 # ----------------- SCREEN 2: MAIN DASHBOARD -----------------
 else:
-    # Top Header
-    st.markdown('<div class="zeno-brand" style="text-align: center; font-size: 2rem;">⚡ ZENO AI CORE ⚡</div>', unsafe_allow_html=True)
+    # Header
+    st.markdown('<div class="zeno-brand" style="text-align: center; font-size: 2.1rem; margin-top: -15px;">⚡ ZENO AI CORE ⚡</div>', unsafe_allow_html=True)
     st.markdown('<div class="orb-wrapper"><div class="core-orb" style="width: 70px; height: 70px;"></div></div>', unsafe_allow_html=True)
 
-    # ----------------- SIDEBAR CONTROLS & UPLOADS -----------------
+    # Sidebar inputs
     with st.sidebar:
-        st.markdown("### 🎛️ Neural Controls")
-        
-        if st.button("🔄 Reset / Standby Mode", use_container_width=True):
-            st.session_state.app_launched = False
+        st.markdown("### 🎛️ Navigation & Tools")
+        if st.button("🚪 Exit to Welcome Screen", use_container_width=True):
+            st.session_state.app_entered = False
             st.rerun()
 
         st.markdown("---")
-        st.markdown("### 📂 Multimodal Inputs")
-        
-        # 1. Image Upload
-        uploaded_image = st.file_uploader("🖼️ Upload Image (Vision)", type=["jpg", "jpeg", "png"])
+        st.markdown("### 📂 Upload Files")
+        uploaded_image = st.file_uploader("🖼️ Upload Image", type=["jpg", "jpeg", "png"])
         if uploaded_image:
             img = Image.open(uploaded_image)
-            st.image(img, caption="Loaded into Buffer", use_container_width=True)
+            st.image(img, caption="Image Ready", use_container_width=True)
 
-        # 2. PDF Upload
-        uploaded_pdf = st.file_uploader("📄 Upload PDF (Document Analysis)", type=["pdf"])
+        uploaded_pdf = st.file_uploader("📄 Upload PDF", type=["pdf"])
         pdf_extracted_text = ""
         if uploaded_pdf:
             reader = PdfReader(uploaded_pdf)
             for page in reader.pages:
-                text = page.extract_text()
-                if text:
-                    pdf_extracted_text += text
-            st.success(f"PDF Parsed: {len(reader.pages)} pages")
+                txt = page.extract_text()
+                if txt:
+                    pdf_extracted_text += txt
+            st.success(f"PDF Loaded ({len(reader.pages)} Pages)")
 
-        # 3. Audio File Upload
         uploaded_audio = st.file_uploader("🎵 Upload Audio", type=["mp3", "wav", "ogg"])
         if uploaded_audio:
             st.audio(uploaded_audio)
 
-    # ----------------- TOUCH TO SPEAK MIC -----------------
+    # ----------------- DIRECT SPEECH MIC COMPONENT -----------------
     st.components.v1.html("""
-    <div style="text-align: center; margin-bottom: 12px;">
+    <div style="text-align: center; margin: 10px 0 15px 0;">
         <button id="micBtn" style="
             background: linear-gradient(45deg, #00f2fe, #4facfe);
             border: none;
-            color: #030816;
+            color: #04091a;
             padding: 12px 28px;
             border-radius: 25px;
-            font-weight: bold;
+            font-weight: 800;
             font-size: 15px;
             cursor: pointer;
-            box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.45);
             letter-spacing: 1px;
-        ">🎙️ Touch to Speak</button>
-        <div id="status" style="color: #80deea; font-size: 13px; margin-top: 8px;">Tap button to command Zeno</div>
+            outline: none;
+        ">🎙️ TOUCH TO SPEAK</button>
+        <div id="status" style="color: #80deea; font-size: 13px; margin-top: 8px;">Tap button to speak your command</div>
     </div>
 
     <script>
@@ -202,64 +198,75 @@ else:
 
         if (SpeechRecognition) {
             const recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
+            recognition.continuous = false;
             recognition.interimResults = false;
+            recognition.lang = 'en-IN';
+
+            let isListening = false;
 
             micBtn.onclick = () => {
+                if (isListening) {
+                    recognition.stop();
+                    return;
+                }
                 try {
                     recognition.start();
-                    status.innerText = "Listening... Speak now";
-                    micBtn.style.background = "#ff3366";
-                } catch(e) {
+                    isListening = true;
+                    status.innerText = "🔴 Listening... Speak clearly now";
+                    micBtn.style.background = "#ff1744";
+                    micBtn.innerText = "🛑 STOP SPEAKING";
+                } catch (e) {
                     recognition.stop();
                 }
             };
 
             recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                status.innerText = "Heard: " + transcript;
-                micBtn.style.background = "linear-gradient(45deg, #00f2fe, #4facfe)";
+                const text = event.results[0][0].transcript;
+                status.innerText = "Heard: " + text;
 
-                const lower = transcript.toLowerCase();
-                if (lower.startsWith("play ")) {
-                    const query = transcript.replace(/play/i, '').trim();
-                    window.open("https://www.youtube.com/results?search_query=" + encodeURI(query), "_blank");
-                } else if (lower.includes("open youtube")) {
-                    window.open("https://www.youtube.com", "_blank");
-                } else if (lower.includes("open google")) {
-                    window.open("https://www.google.com", "_blank");
-                }
-
-                const inputField = window.parent.document.querySelector('textarea[aria-label="Ask Zeno anything..."]');
-                if (inputField) {
-                    inputField.value = transcript;
-                    inputField.dispatchEvent(new Event('input', { bubbles: true }));
-                    const submitBtn = window.parent.document.querySelector('button[kind="secondaryFormSubmit"], button[data-testid="stBaseButton-secondary"]');
-                    if (submitBtn) submitBtn.click();
+                // Send voice result into Streamlit chat input automatically
+                const doc = window.parent.document;
+                const textarea = doc.querySelector('textarea[aria-label="Ask Zeno anything..."]');
+                if (textarea) {
+                    textarea.value = text;
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    setTimeout(() => {
+                        const sendBtn = doc.querySelector('button[data-testid="stBaseButton-secondary"]') || 
+                                        doc.querySelector('button[kind="secondaryFormSubmit"]');
+                        if (sendBtn) {
+                            sendBtn.click();
+                        }
+                    }, 300);
                 }
             };
 
-            recognition.onerror = () => {
-                status.innerText = "Mic Error. Tap to try again.";
-                micBtn.style.background = "linear-gradient(45deg, #00f2fe, #4facfe)";
+            recognition.onerror = (e) => {
+                status.innerText = "Mic Error: " + (e.error || "Tap again and allow permission");
+                resetBtn();
             };
 
             recognition.onend = () => {
-                micBtn.style.background = "linear-gradient(45deg, #00f2fe, #4facfe)";
+                resetBtn();
             };
+
+            function resetBtn() {
+                isListening = false;
+                micBtn.style.background = "linear-gradient(45deg, #00f2fe, #4facfe)";
+                micBtn.innerText = "🎙️ TOUCH TO SPEAK";
+            }
         } else {
-            status.innerText = "Speech API supported best on Google Chrome.";
+            status.innerText = "Voice Recognition requires Chrome or Edge browser.";
         }
     </script>
-    """, height=85)
+    """, height=90)
 
-    # ----------------- CHAT HISTORY -----------------
+    # Chat messages display
     for msg in st.session_state.messages:
         avatar = "🔮" if msg["role"] == "assistant" else "👤"
         with st.chat_message(msg["role"], avatar=avatar):
             st.markdown(msg["content"])
 
-    # ----------------- CHAT INPUT & EXECUTION -----------------
+    # Chat input & AI generation
     user_prompt = st.chat_input("Ask Zeno anything...")
 
     if user_prompt:
@@ -269,23 +276,19 @@ else:
 
         with st.chat_message("assistant", avatar="🔮"):
             if not client:
-                st.error("API Key configure aagilla. Streamlit Secrets nalli GEMINI_API_KEY add maadi.")
+                st.error("API Key configure aagilla. Streamlit Secrets nalli GEMINI_API_KEY check maadi.")
             else:
                 try:
                     payload = []
-                    
-                    # Context from PDF
                     if pdf_extracted_text:
-                        payload.append(f"Context from attached PDF document:\n{pdf_extracted_text[:4000]}\n")
-                    
-                    # Context from Image
+                        payload.append(f"Context from PDF:\n{pdf_extracted_text[:4000]}\n")
                     if uploaded_image:
                         payload.append(Image.open(uploaded_image))
-
                     payload.append(user_prompt)
 
+                    # Stable 1.5-flash for no quota & no 503 limits
                     response = client.models.generate_content(
-                        model="gemini-3.8-flash",
+                        model="gemini-1.5-flash",
                         contents=payload,
                         config=types.GenerateContentConfig(
                             system_instruction=SYSTEM_INSTRUCTION,
@@ -297,7 +300,7 @@ else:
                     st.markdown(clean_reply)
                     st.session_state.messages.append({"role": "assistant", "content": clean_reply})
 
-                    # Natural Voice Speech Output
+                    # Auto voice synthesizer
                     tts_script = f"""
                     <script>
                         if ('speechSynthesis' in window) {{
