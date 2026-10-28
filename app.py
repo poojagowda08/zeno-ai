@@ -285,7 +285,7 @@ else:
                     payload.append(user_prompt)
 
                     response = client.models.generate_content(
-                        model="gemini-2.5-flash",
+                        model="gemini-3.8-flash",
                         contents=payload,
                         config=types.GenerateContentConfig(
                             system_instruction=SYSTEM_INSTRUCTION,
