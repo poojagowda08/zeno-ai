@@ -110,33 +110,44 @@ def call_groq_api(prompt, api_token):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
     
-    payload = {
-        "model": "llama-3.1-8b-instant",
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are Zeno, a hyper-intelligent, polite, and friendly voice assistant. Keep answers brief, natural and conversational (1 to 2 short sentences). Never use markdown like asterisks or hashes."
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "temperature": 0.6
-    }
+    # Supported Groq Models to attempt sequentially
+    models_to_try = ["llama-3.2-3b-preview", "llama3-8b-8192", "mixtral-8x7b-32768"]
     
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-    
-    try:
-        with urllib.request.urlopen(req, timeout=20) as response:
-            result = json.loads(response.read().decode("utf-8"))
-            return result["choices"][0]["message"]["content"]
-    except urllib.error.HTTPError as e:
-        error_details = e.read().decode("utf-8")
-        return f"Groq Server Error ({e.code}): {error_details}"
-    except Exception as e:
-        return f"Request Error: {str(e)}"
+    last_error = ""
+    for model_name in models_to_try:
+        payload = {
+            "model": model_name,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are Zeno, a hyper-intelligent, polite, and friendly voice assistant. Keep answers brief, natural and conversational (1 to 2 short sentences). Never use markdown like asterisks or hashes."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "temperature": 0.6
+        }
+        
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+        
+        try:
+            with urllib.request.urlopen(req, timeout=20) as response:
+                result = json.loads(response.read().decode("utf-8"))
+                return result["choices"][0]["message"]["content"]
+        except urllib.error.HTTPError as e:
+            error_details = e.read().decode("utf-8")
+            last_error = f"Groq Server Error ({e.code}): {error_details}"
+            # If model is not found, it automatically falls back to the next model in the list
+            if "model_not_found" in error_details:
+                continue
+            return last_error
+        except Exception as e:
+            return f"Request Error: {str(e)}"
+            
+    return last_error
 
 # ----------------- SCREEN 1: CLICK TO ENTER -----------------
 if not st.session_state.app_entered:
@@ -291,7 +302,7 @@ else:
                 st.markdown(clean_reply)
                 st.session_state.messages.append({"role": "assistant", "content": clean_reply})
 
-                # Speech Output via JS Injection
+                # Speech Output
                 spoken_text = clean_reply[:250].replace("\\", "")
                 tts_js = f"""
                 <script>
