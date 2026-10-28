@@ -1,9 +1,7 @@
 import streamlit as st
 import os
 from PIL import Image
-from pypdf import PdfReader
-from google import genai
-from google.genai import types
+from groq import Groq
 
 # ----------------- PAGE CONFIG -----------------
 st.set_page_config(
@@ -13,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ----------------- ADVANCED CYBERPUNK STYLING -----------------
+# Cyberpunk Styling
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
@@ -24,23 +22,16 @@ st.markdown("""
         font-family: 'Rajdhani', sans-serif;
     }
 
-    /* Cinematic Welcome Card */
     .enter-card {
         background: rgba(10, 16, 38, 0.85);
         border: 2px solid rgba(0, 242, 254, 0.45);
-        box-shadow: 0 0 40px rgba(0, 242, 254, 0.25), inset 0 0 20px rgba(127, 0, 255, 0.2);
+        box-shadow: 0 0 40px rgba(0, 242, 254, 0.25);
         border-radius: 24px;
         padding: 45px 25px;
         text-align: center;
         backdrop-filter: blur(12px);
         margin: 40px auto;
         max-width: 600px;
-        animation: fadeIn 1s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(15px); }
-        to { opacity: 1; transform: translateY(0); }
     }
 
     .zeno-brand {
@@ -67,7 +58,6 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
-    /* Glowing Pulsing Core */
     .orb-wrapper {
         display: flex;
         justify-content: center;
@@ -101,33 +91,31 @@ if "app_entered" not in st.session_state:
 
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "Zeno core systems active. Tap mic or ask me anything!"}
+        {"role": "assistant", "content": "Zeno core systems active. Ask me anything!"}
     ]
 
-# ----------------- API SETUP -----------------
-api_key = st.secrets.get("GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY", "")
-client = genai.Client(api_key=api_key) if api_key else None
+# ----------------- GROQ CLIENT SETUP -----------------
+groq_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+client = Groq(api_key=groq_key) if groq_key else None
 
-SYSTEM_INSTRUCTION = """
-You are Zeno, a hyper-intelligent, polite, and futuristic AI assistant.
+SYSTEM_INSTRUCTION = """You are Zeno, a hyper-intelligent, polite, and futuristic AI assistant.
 Keep spoken replies brief, crisp, and conversational (1 to 2 short sentences).
-Never use markdown symbols like asterisks (*) or hashes (#) so the speech synthesizer reads it naturally.
-"""
+Never use markdown symbols like asterisks (*) or hashes (#) so the speech engine reads it naturally."""
 
-# ----------------- SCREEN 1: CLICK TO ENTER SCREEN -----------------
+# ----------------- SCREEN 1: CLICK TO ENTER -----------------
 if not st.session_state.app_entered:
     st.markdown("""
     <div class="enter-card">
         <div class="status-pill">NEURAL CORE READY</div>
         <div class="zeno-brand">⚡ ZENO AI ⚡</div>
         <p style="color: #80deea; font-size: 1.15rem; margin-top: 5px;">
-            Next-Gen Multimodal Voice Interface
+            Next-Gen High-Speed Voice Interface
         </p>
         <div class="orb-wrapper">
             <div class="core-orb"></div>
         </div>
         <p style="color: #90caf9; font-size: 0.92rem; margin-bottom: 25px;">
-            Touch-to-Speak • Vision AI • PDF Document Analysis
+            Ultra Fast Response • Zero Server Delays • Voice Synthesis
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -151,21 +139,11 @@ else:
             st.rerun()
 
         st.markdown("---")
-        st.markdown("### 📂 Upload Files")
+        st.markdown("### 📂 Upload Media")
         uploaded_image = st.file_uploader("🖼️ Upload Image", type=["jpg", "jpeg", "png"])
         if uploaded_image:
             img = Image.open(uploaded_image)
-            st.image(img, caption="Image Ready", use_container_width=True)
-
-        uploaded_pdf = st.file_uploader("📄 Upload PDF", type=["pdf"])
-        pdf_extracted_text = ""
-        if uploaded_pdf:
-            reader = PdfReader(uploaded_pdf)
-            for page in reader.pages:
-                txt = page.extract_text()
-                if txt:
-                    pdf_extracted_text += txt
-            st.success(f"PDF Loaded ({len(reader.pages)} Pages)")
+            st.image(img, caption="Image Buffered", use_container_width=True)
 
         uploaded_audio = st.file_uploader("🎵 Upload Audio", type=["mp3", "wav", "ogg"])
         if uploaded_audio:
@@ -231,15 +209,13 @@ else:
                     setTimeout(() => {
                         const sendBtn = doc.querySelector('button[data-testid="stBaseButton-secondary"]') || 
                                         doc.querySelector('button[kind="secondaryFormSubmit"]');
-                        if (sendBtn) {
-                            sendBtn.click();
-                        }
+                        if (sendBtn) sendBtn.click();
                     }, 300);
                 }
             };
 
             recognition.onerror = (e) => {
-                status.innerText = "Mic Error. Tap again and allow permission";
+                status.innerText = "Mic Error. Tap to retry";
                 resetBtn();
             };
 
@@ -274,39 +250,22 @@ else:
 
         with st.chat_message("assistant", avatar="🔮"):
             if not client:
-                st.error("API Key configure aagilla. Streamlit Secrets nalli GEMINI_API_KEY check maadi.")
+                st.error("GROQ_API_KEY Missing! Streamlit Secrets nalli GROQ_API_KEY add maadi.")
             else:
-                payload = []
-                if pdf_extracted_text:
-                    payload.append(f"Context from PDF:\n{pdf_extracted_text[:4000]}\n")
-                if uploaded_image:
-                    payload.append(Image.open(uploaded_image))
-                payload.append(user_prompt)
+                try:
+                    chat_completion = client.chat.completions.create(
+                        messages=[
+                            {"role": "system", "content": SYSTEM_INSTRUCTION},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        model="llama-3.3-70b-versatile",
+                    )
 
-                # 503 Server Rush ತಪ್ಪಿಸಲು ಆಟೋಮ್ಯಾಟಿಕ್ ಬ್ಯಾಕಪ್ ಮಾಡೆಲ್‌ಗಳು
-                candidate_models = ["gemini-1.5-flash-8b", "gemini-1.5-flash", "gemini-2.5-flash"]
-                response = None
-
-                for target_model in candidate_models:
-                    try:
-                        response = client.models.generate_content(
-                            model=target_model,
-                            contents=payload,
-                            config=types.GenerateContentConfig(
-                                system_instruction=SYSTEM_INSTRUCTION,
-                                temperature=0.6,
-                            )
-                        )
-                        if response and response.text:
-                            break
-                    except Exception:
-                        continue
-
-                if response and response.text:
-                    clean_reply = response.text.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
+                    clean_reply = chat_completion.choices[0].message.content.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
                     st.markdown(clean_reply)
                     st.session_state.messages.append({"role": "assistant", "content": clean_reply})
 
+                    # Voice Output
                     tts_script = f"""
                     <script>
                         if ('speechSynthesis' in window) {{
@@ -329,5 +288,6 @@ else:
                     </script>
                     """
                     st.components.v1.html(tts_script, height=0)
-                else:
-                    st.error("Google Server High Demand. Please try again in a few seconds.")
+
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
