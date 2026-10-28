@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Cyberpunk Styling
+# ----------------- ADVANCED CYBERPUNK STYLING -----------------
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
@@ -23,16 +23,23 @@ st.markdown("""
         font-family: 'Rajdhani', sans-serif;
     }
 
+    /* Cinematic Welcome Card */
     .enter-card {
         background: rgba(10, 16, 38, 0.85);
         border: 2px solid rgba(0, 242, 254, 0.45);
-        box-shadow: 0 0 40px rgba(0, 242, 254, 0.25);
+        box-shadow: 0 0 40px rgba(0, 242, 254, 0.25), inset 0 0 20px rgba(127, 0, 255, 0.2);
         border-radius: 24px;
         padding: 45px 25px;
         text-align: center;
         backdrop-filter: blur(12px);
         margin: 40px auto;
         max-width: 600px;
+        animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     .zeno-brand {
@@ -59,6 +66,7 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
+    /* Glowing Pulsing Core */
     .orb-wrapper {
         display: flex;
         justify-content: center;
@@ -95,32 +103,40 @@ if "messages" not in st.session_state:
         {"role": "assistant", "content": "Zeno core systems active. Ask me anything!"}
     ]
 
-# ----------------- GROQ API FUNCTION (NO EXTERNAL PACKAGE NEEDED) -----------------
+# ----------------- GROQ API FUNCTION -----------------
 groq_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+
 def call_groq_api(prompt, api_token):
     url = "https://api.groq.com/openai/v1/chat/completions"
+    clean_token = api_token.strip().replace('"', '').replace("'", "")
+    
     headers = {
-        "Authorization": f"Bearer {api_token.strip()}",
+        "Authorization": f"Bearer {clean_token}",
         "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
+    
     body = {
-        "model": "llama-3.1-8b-instant",  # ಅತ್ಯಂತ ವೇಗವಾದ ಮತ್ತು ಲಭ್ಯವಿರುವ ಸ್ಟೇಬಲ್ ಮಾಡೆಲ್
+        "model": "llama-3.1-8b-instant",
         "messages": [
             {
                 "role": "system",
-                "content": "You are Zeno, a friendly AI voice assistant. Keep answers brief (1-2 short sentences) and clear without markdown."
+                "content": "You are Zeno, a hyper-intelligent, polite, and friendly voice assistant. Keep answers brief, natural, and conversational (1 to 2 short sentences). Never use asterisks or markdown symbols."
             },
-            {"role": "user", "content": prompt}
-        ]
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "temperature": 0.6
     }
+    
     data = json.dumps(body).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-    with urllib.request.urlopen(req, timeout=15) as response:
+    
+    with urllib.request.urlopen(req, timeout=20) as response:
         result = json.loads(response.read().decode("utf-8"))
         return result["choices"][0]["message"]["content"]
-
-            
 
 # ----------------- SCREEN 1: CLICK TO ENTER -----------------
 if not st.session_state.app_entered:
@@ -135,7 +151,7 @@ if not st.session_state.app_entered:
             <div class="core-orb"></div>
         </div>
         <p style="color: #90caf9; font-size: 0.92rem; margin-bottom: 25px;">
-            Touch-to-Speak • Direct Lightning Synthesis • Zero Delays
+            Touch-to-Speak • Instant Neural Response • Zero Delays
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -234,7 +250,7 @@ else:
                 }
             };
 
-            recognition.onerror = () => {
+            recognition.onerror = (e) => {
                 status.innerText = "Mic Error. Tap to retry";
                 resetBtn();
             };
@@ -278,7 +294,7 @@ else:
                     st.markdown(clean_reply)
                     st.session_state.messages.append({"role": "assistant", "content": clean_reply})
 
-                    # Voice Output
+                    # Natural Voice Speech Output
                     tts_script = f"""
                     <script>
                         if ('speechSynthesis' in window) {{
