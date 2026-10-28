@@ -104,7 +104,7 @@ if "messages" not in st.session_state:
         {"role": "assistant", "content": "Zeno core systems active. Ask me anything!"}
     ]
 
-# ----------------- GROQ API FUNCTION WITH CLOUDFLARE BYPASS HEADERS -----------------
+# ----------------- GROQ API HELPER FUNCTION -----------------
 groq_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
 
 def call_groq_api(prompt, api_token):
@@ -119,11 +119,11 @@ def call_groq_api(prompt, api_token):
     }
     
     payload = {
-        "model": "llama-3.3-70b-versatile",
+        "model": "llama-3.1-8b-instant",
         "messages": [
             {
                 "role": "system",
-                "content": "You are Zeno, a hyper-intelligent, friendly voice assistant. Keep answers brief, natural and conversational (1 to 2 short sentences). Never use markdown like asterisks or hashes."
+                "content": "You are Zeno, a hyper-intelligent, polite, and friendly voice assistant. Keep answers brief, natural and conversational (1 to 2 short sentences). Never use markdown like asterisks or hashes."
             },
             {
                 "role": "user",
@@ -243,84 +243,4 @@ else:
 
             recognition.onresult = (event) => {
                 const text = event.results[0][0].transcript;
-                status.innerText = "Heard: " + text;
-
-                const doc = window.parent.document;
-                const textarea = doc.querySelector('textarea[aria-label="Ask Zeno anything..."]');
-                if (textarea) {
-                    textarea.value = text;
-                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                    setTimeout(() => {
-                        const sendBtn = doc.querySelector('button[data-testid="stBaseButton-secondary"]') || 
-                                        doc.querySelector('button[kind="secondaryFormSubmit"]');
-                        if (sendBtn) sendBtn.click();
-                    }, 300);
-                }
-            };
-
-            recognition.onerror = (e) => {
-                status.innerText = "Mic Error. Tap to retry";
-                resetBtn();
-            };
-
-            recognition.onend = () => {
-                resetBtn();
-            };
-
-            function resetBtn() {
-                isListening = false;
-                micBtn.style.background = "linear-gradient(45deg, #00f2fe, #4facfe)";
-                micBtn.innerText = "🎙️ TOUCH TO SPEAK";
-            }
-        } else {
-            status.innerText = "Voice Recognition requires Chrome browser.";
-        }
-    </script>
-    """, height=90)
-
-    # Chat Messages
-    for msg in st.session_state.messages:
-        avatar = "🔮" if msg["role"] == "assistant" else "👤"
-        with st.chat_message(msg["role"], avatar=avatar):
-            st.markdown(msg["content"])
-
-    # Chat Input
-    user_prompt = st.chat_input("Ask Zeno anything...")
-
-    if user_prompt:
-        st.session_state.messages.append({"role": "user", "content": user_prompt})
-        with st.chat_message("user", avatar="👤"):
-            st.markdown(user_prompt)
-
-        with st.chat_message("assistant", avatar="🔮"):
-            if not groq_key:
-                st.error("GROQ_API_KEY Missing! Streamlit Secrets nalli GROQ_API_KEY add maadi.")
-            else:
-                clean_reply = call_groq_api(user_prompt, groq_key)
-                clean_reply = clean_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
-                st.markdown(clean_reply)
-                st.session_state.messages.append({"role": "assistant", "content": clean_reply})
-
-                # Natural Voice Speech Output
-                tts_script = f"""
-                <script>
-                    if ('speechSynthesis' in window) {{
-                        window.speechSynthesis.cancel();
-                        const speakNow = () => {{
-                            const voices = window.speechSynthesis.getVoices();
-                            const utterance = new SpeechSynthesisUtterance("{clean_reply[:250]}");
-                            const targetVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Female')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
-                            if (targetVoice) utterance.voice = targetVoice;
-                            utterance.pitch = 1.0;
-                            utterance.rate = 1.0;
-                            window.speechSynthesis.speak(utterance);
-                        }};
-                        if (window.speechSynthesis.getVoices().length > 0) {{
-                            speakNow();
-                        }} else {{
-                            window.speechSynthesis.onvoiceschanged = speakNow;
-                        }}
-                    }}
-                </script>
-                """
-                st.components.v1.html(tts_script, height=0)
+                status.innerText = "Heard: " + text
