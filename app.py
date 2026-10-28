@@ -37,14 +37,14 @@ def save_data(filename, data):
     except Exception:
         pass
 
-# ----------------- PASSWORD STRENGTH CHECK -----------------
+# ----------------- PASSWORD VALIDATION -----------------
 def is_strong_password(password):
     if len(password) < 8:
-        return False, "Password minimum 8 characters erbeku."
+        return False, "Password must be at least 8 characters long."
     if not re.search(r"\d", password):
-        return False, "Password nalli ondhu number (0-9) erbeku."
+        return False, "Password must contain at least one number (0-9)."
     if not re.search(r"[@#$%^&*!_\-+=]", password):
-        return False, "Password nalli ondhu special symbol (@, #, $, %, &, *, !) erbeku."
+        return False, "Password must contain at least one special symbol (@, #, $, %, &, *, !)."
     return True, "Strong Password!"
 
 # ----------------- ROTATING DAILY TOPICS -----------------
@@ -80,7 +80,7 @@ def get_today_topic():
     day_idx = date.today().timetuple().tm_yday % len(DAILY_TOPICS)
     return DAILY_TOPICS[day_idx]
 
-# ----------------- NEON CYBERPUNK STYLING -----------------
+# ----------------- CYBERPUNK STYLING -----------------
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
@@ -104,20 +104,7 @@ st.markdown("""
         background: linear-gradient(90deg, #00f2fe 0%, #00ffcc 50%, #ff007f 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
         margin-bottom: 2px;
-    }
-
-    .enter-card {
-        background: rgba(13, 20, 50, 0.9);
-        border: 2px solid #00f2fe;
-        box-shadow: 0 0 35px rgba(0, 242, 254, 0.35);
-        border-radius: 20px;
-        padding: 30px 20px;
-        text-align: center;
-        backdrop-filter: blur(12px);
-        margin: 20px auto;
-        max-width: 550px;
     }
 
     .daily-card {
@@ -133,9 +120,9 @@ st.markdown("""
         background: rgba(10, 25, 55, 0.9);
         border: 1.5px solid #00ffcc;
         border-radius: 16px;
-        padding: 16px 20px;
-        margin-bottom: 14px;
-        box-shadow: 0 0 20px rgba(0, 255, 204, 0.25);
+        padding: 14px 18px;
+        margin-bottom: 12px;
+        box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
     }
 
     .visible-box {
@@ -144,30 +131,11 @@ st.markdown("""
         border-radius: 14px;
         padding: 14px;
         margin-bottom: 12px;
-        box-shadow: 0 0 15px rgba(0, 255, 204, 0.15);
-    }
-
-    .storage-badge {
-        background: rgba(0, 242, 254, 0.12);
-        border: 1px solid #00f2fe;
-        color: #80deea;
-        padding: 5px 12px;
-        border-radius: 12px;
-        font-size: 0.85rem;
-        display: inline-block;
-        margin-bottom: 6px;
-    }
-
-    div[data-testid="stFileUploader"] {
-        background: rgba(10, 16, 42, 0.8);
-        border: 1px dashed #00f2fe;
-        border-radius: 12px;
-        padding: 8px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SESSION STATE & LOGIN PERSISTENCE -----------------
+# ----------------- SESSION STATE & PERSISTENT LOGIN -----------------
 query_user = st.query_params.get("user", "")
 
 if "logged_in_user" not in st.session_state:
@@ -181,16 +149,44 @@ if "spoken_daily_topic" not in st.session_state:
 
 if "guest_messages" not in st.session_state:
     st.session_state.guest_messages = [
-        {"role": "assistant", "content": "Welcome! I am Zeno, your English coach. Speak or type to practice!"}
+        {"role": "assistant", "content": "Welcome! I am Zeno, your English coach. Record your voice with the mic below or type to practice!"}
     ]
 
-# ----------------- GROQ API CALLER -----------------
-def call_groq_api_robust(prompt):
-    raw_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
-    if not raw_key:
-        return "GROQ_API_KEY Missing! Streamlit Secrets nalli GROQ_API_KEY add maadi."
+# ----------------- GROQ API HELPER (TEXT & SPEECH-TO-TEXT) -----------------
+raw_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+API_KEYS = [k.strip().replace('"', '').replace("'", "") for k in raw_key.split(",") if k.strip()]
 
-    keys_list = [k.strip().replace('"', '').replace("'", "") for k in raw_key.split(",") if k.strip()]
+def transcribe_audio_groq(audio_bytes):
+    if not API_KEYS:
+        return None
+    api_token = API_KEYS[0]
+    boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW"
+    url = "https://api.groq.com/openai/v1/audio/transcriptions"
+    
+    body = bytearray()
+    body.extend(f"--{boundary}\r\n".encode("utf-8"))
+    body.extend(b'Content-Disposition: form-data; name="model"\r\n\r\nwhisper-large-v3-turbo\r\n')
+    body.extend(f"--{boundary}\r\n".encode("utf-8"))
+    body.extend(b'Content-Disposition: form-data; name="file"; filename="audio.wav"\r\n')
+    body.extend(b"Content-Type: audio/wav\r\n\r\n")
+    body.extend(audio_bytes)
+    body.extend(f"\r\n--{boundary}--\r\n".encode("utf-8"))
+    
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": f"multipart/form-data; boundary={boundary}"
+    }
+    req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return data.get("text", "")
+    except Exception:
+        return None
+
+def call_groq_api_robust(prompt):
+    if not API_KEYS:
+        return "GROQ_API_KEY Missing! Streamlit Secrets nalli add maadi."
 
     system_instruction = (
         "You are Zeno, a dedicated, highly skilled English language coach and tutor. "
@@ -205,16 +201,15 @@ def call_groq_api_robust(prompt):
         "6. Never use markdown symbols like asterisks, hashes, or bullet points."
     )
 
-    last_error = ""
-
-    for api_token in keys_list:
+    for api_token in API_KEYS:
         headers = {
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            "User-Agent": "Mozilla/5.0"
         }
 
+        # Auto-fetch available models
         models_url = "https://api.groq.com/openai/v1/models"
         available_models = []
         try:
@@ -226,13 +221,12 @@ def call_groq_api_robust(prompt):
                     if not any(x in m_id.lower() for x in ["whisper", "guard", "vision", "orpheus"]):
                         available_models.append(m_id)
         except Exception:
-            available_models = ["llama-3.1-8b-instant", "llama3-8b-8192", "gemma2-9b-it"]
-
-        if not available_models:
             available_models = ["llama-3.1-8b-instant", "llama3-8b-8192"]
 
-        chat_url = "https://api.groq.com/openai/v1/chat/completions"
+        if not available_models:
+            available_models = ["llama-3.1-8b-instant"]
 
+        chat_url = "https://api.groq.com/openai/v1/chat/completions"
         for model_name in available_models:
             payload = {
                 "model": model_name,
@@ -249,15 +243,10 @@ def call_groq_api_robust(prompt):
                 with urllib.request.urlopen(req, timeout=15) as response:
                     res = json.loads(response.read().decode("utf-8"))
                     return res["choices"][0]["message"]["content"]
-            except urllib.error.HTTPError as e:
-                err_text = e.read().decode("utf-8")
-                last_error = f"Groq ({model_name}): {err_text}"
-                continue
-            except Exception as e:
-                last_error = f"Error: {str(e)}"
+            except Exception:
                 continue
 
-    return f"API Issue: {last_error}"
+    return "Server is busy right now. Please repeat your sentence in a moment!"
 
 # ----------------- TIME & AUTH RULES -----------------
 is_logged_in = st.session_state.logged_in_user is not None
@@ -268,15 +257,13 @@ if not is_logged_in:
 else:
     time_limit_reached = False
 
-# ----------------- SIGN IN / SIGN UP (ONLY FOR GUEST AFTER 1 MIN) -----------------
+# ----------------- SIGN IN / SIGN UP OVERLAY -----------------
 if not is_logged_in and time_limit_reached:
     st.markdown("""
-    <div class="enter-card">
-        <div style="color: #ff007f; font-weight: 800; letter-spacing: 2px;">⚠️ 1-MINUTE FREE TRIAL COMPLETED</div>
+    <div style="background: rgba(13, 20, 50, 0.95); border: 2px solid #00f2fe; border-radius: 20px; padding: 25px; text-align: center; max-width: 550px; margin: 20px auto;">
+        <div style="color: #ff007f; font-weight: 800; font-size: 1.2rem;">⚠️ 1-MINUTE FREE TRIAL COMPLETED</div>
         <div class="zeno-brand">⚡ ZENO AI ⚡</div>
-        <p style="color: #e0f7fa; font-size: 1.05rem; margin-top: 5px;">
-            Ondu sala <b>Sign In</b> athava <b>Sign Up</b> maadi. Admele yavathoo login kelalla, permanent aagi chat save aagirathe!
-        </p>
+        <p style="color: #e0f7fa;">Ondu sala Sign In athava Sign Up maadi. Chat history permanent aagi Left Sidebar nalli save aagirathe!</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -311,7 +298,7 @@ if not is_logged_in and time_limit_reached:
 
     with auth_tab2:
         st.subheader("New User Registration")
-        st.info("Password rule: Minimum 8 characters, 1 number, mathu 1 special symbol (@, #, $, %).")
+        st.info("Password rule: Minimum 8 characters, 1 number, and 1 special symbol (@, #, $, %).")
         new_id = st.text_input("Choose Username", key="reg_id")
         new_pwd = st.text_input("Create Password", type="password", key="reg_pwd")
         new_pwd_confirm = st.text_input("Confirm Password", type="password", key="reg_pwd_confirm")
@@ -338,7 +325,7 @@ if not is_logged_in and time_limit_reached:
                 save_data(HISTORY_FILE, all_histories)
                 st.rerun()
 
-# ----------------- MAIN TUTOR SCREEN (WITH LEFT SIDEBAR HISTORY) -----------------
+# ----------------- MAIN TUTOR SCREEN -----------------
 else:
     all_histories = load_data(HISTORY_FILE, {})
     today_topic = get_today_topic()
@@ -357,8 +344,8 @@ else:
 
     # ================= LEFT SIDEBAR (SAVED CHAT HISTORY) =================
     with st.sidebar:
-        st.markdown('<div class="zeno-brand" style="font-size: 1.5rem;">📁 CHAT HISTORY</div>', unsafe_allow_html=True)
-        st.caption(f"User: **{current_user}**")
+        st.markdown('<div class="zeno-brand" style="font-size: 1.4rem;">📁 CHAT HISTORY</div>', unsafe_allow_html=True)
+        st.caption(f"Active User: **{current_user}**")
 
         if st.button("➕ New Chat Session", use_container_width=True):
             new_welcome = f"Hello {current_user}! Fresh conversation started. What would you like to practice now?"
@@ -372,13 +359,13 @@ else:
         st.markdown("---")
         st.markdown("### 💬 Saved Conversations")
         
-        if len(user_messages) <= 1:
+        user_queries = [m["content"] for m in user_messages if m["role"] == "user"]
+        if not user_queries:
             st.write("No previous conversations yet.")
         else:
-            user_queries = [m["content"] for m in user_messages if m["role"] == "user"]
             for query in reversed(user_queries[-15:]):
-                preview_text = query[:28] + "..." if len(query) > 28 else query
-                st.markdown(f"🗨️ **{preview_text}**")
+                preview_text = query[:25] + "..." if len(query) > 25 else query
+                st.markdown(f"🗨️ {preview_text}")
 
         st.markdown("---")
         chat_json_str = json.dumps(user_messages, indent=2)
@@ -397,41 +384,38 @@ else:
     with head_col1:
         st.markdown('<div class="zeno-brand">⚡ ZENO AI | ENGLISH COACH ⚡</div>', unsafe_allow_html=True)
         if not is_logged_in:
-            st.markdown(f'<div class="storage-badge" style="border-color: #ff007f; color: #ff80bf;">⏳ Free Trial: <b>{remaining_sec}s left</b></div>', unsafe_allow_html=True)
+            st.markdown(f'<span style="color: #ff80bf; font-weight: bold;">⏳ Free Trial: {remaining_sec}s left</span>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div class="storage-badge">✅ Permanent Login: <b>{current_user}</b> | Left Sidebar History Active ({len(user_messages)} msgs)</div>', unsafe_allow_html=True)
+            st.markdown(f'<span style="color: #00ffcc; font-weight: bold;">✅ Permanent Login: {current_user} | Left Sidebar History Active ({len(user_messages)} msgs)</span>', unsafe_allow_html=True)
 
-    # ================= 1. HOW TO DOWNLOAD & INSTALL APP (IN ENGLISH) =================
+    # 1. HOW TO INSTALL APP (IN ENGLISH)
     st.markdown("""
     <div class="install-card">
-        <div style="color: #00ffcc; font-family: 'Orbitron'; font-size: 1.15rem; font-weight: bold; margin-bottom: 6px;">
+        <div style="color: #00ffcc; font-family: 'Orbitron'; font-size: 1.1rem; font-weight: bold; margin-bottom: 4px;">
             📲 How to Download & Install Zeno AI App
         </div>
-        <div style="color: #e0f7fa; font-size: 1rem; line-height: 1.6;">
+        <div style="color: #e0f7fa; font-size: 0.95rem; line-height: 1.5;">
             <b>For Android & PC (Google Chrome):</b><br/>
             1. Open this website in your <b>Chrome Browser</b>.<br/>
             2. Tap the <b>3 dots menu (⋮)</b> in the top right corner.<br/>
             3. Tap <b>"Install app"</b> or <b>"Add to Home screen"</b>.<br/>
-            4. Click <b>"Install"</b>. The Zeno AI icon will appear directly on your home screen or desktop like a native app.<br/>
-            <br/>
-            <b>For iPhone (Safari):</b><br/>
-            1. Tap the <b>Share Button</b> at the bottom of the screen.<br/>
-            2. Scroll down and tap <b>"Add to Home Screen"</b>.
+            4. Click <b>"Install"</b>. The Zeno AI icon will appear on your mobile home screen like a native app.<br/>
+            <b>For iPhone (Safari):</b> Tap the <b>Share Button</b> at the bottom, then tap <b>"Add to Home Screen"</b>.
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ================= 2. DIRECT IMAGE & FILE EXPLANATION PANEL =================
-    st.markdown('<div class="visible-box"><b>🖼️ Send Image or File to Zeno for Instant English Explanation</b></div>', unsafe_allow_html=True)
+    # 2. IMAGE & FILE EXPLANATION PANEL
+    st.markdown('<div class="visible-box"><b>🖼️ Upload Image or File to Zeno for Instant English Explanation</b></div>', unsafe_allow_html=True)
     up_c1, up_c2 = st.columns([2, 1])
     with up_c1:
         up_file = st.file_uploader("Upload Image, Document, or Audio", type=["png", "jpg", "jpeg", "mp3", "wav", "pdf", "txt"], key="main_visible_uploader", label_visibility="collapsed")
-        file_msg = st.text_input("Ask Zeno about this file (Optional):", placeholder="e.g. Explain this image in simple English and teach me new words", key="direct_file_caption")
+        file_msg = st.text_input("Ask Zeno about this file (Optional):", placeholder="e.g. Explain this image in simple English and teach me new vocabulary", key="direct_file_caption")
     with up_c2:
         if up_file:
             st.success(f"Attached: {up_file.name}")
             if up_file.type.startswith("image/"):
-                st.image(up_file, width=150)
+                st.image(up_file, width=140)
             elif up_file.type.startswith("audio/"):
                 st.audio(up_file)
             if st.button("📤 Explain this with Zeno AI", use_container_width=True):
@@ -439,10 +423,10 @@ else:
                 user_messages.append({"role": "user", "content": f"📎 [Uploaded: {up_file.name}] {user_question}"})
                 
                 ai_prompt = (
-                    f"The user has uploaded a file named '{up_file.name}' of type '{up_file.type}'. "
-                    f"The user prompt is: '{user_question}'. "
+                    f"The user uploaded a file named '{up_file.name}' of type '{up_file.type}'. "
+                    f"User message: '{user_question}'. "
                     "As an expert English tutor, explain the topic clearly, describe key visual/content points in simple sentences, "
-                    "provide 2 useful vocabulary words related to it, and give a natural English phrase they can practice speaking."
+                    "provide 2 useful vocabulary words related to it, and give a natural English sentence they can practice."
                 )
                 bot_reply = call_groq_api_robust(ai_prompt)
                 clean_r = bot_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
@@ -452,7 +436,7 @@ else:
                     save_data(HISTORY_FILE, all_histories)
                 st.rerun()
 
-    # DAILY NOTIFICATION BANNER
+    # 3. DAILY NOTIFICATION BANNER
     st.markdown(f"""
     <div class="daily-card">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -464,25 +448,6 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # AUTO VOICE WELCOME
-    if not st.session_state.spoken_daily_topic:
-        st.session_state.spoken_daily_topic = True
-        greeting_name = "there" if not is_logged_in else current_user
-        spoken_daily = f"Hello {greeting_name}! Today's English topic is {today_topic['title']}. {today_topic['lesson']} Try repeating after me: {today_topic['phrase']}"
-        st.components.v1.html(f"""
-        <script>
-            if ('speechSynthesis' in window) {{
-                window.speechSynthesis.cancel();
-                const utter = new SpeechSynthesisUtterance("{spoken_daily}");
-                utter.rate = 1.0;
-                utter.onend = () => {{
-                    window.dispatchEvent(new CustomEvent('zeno_speech_ended'));
-                }};
-                window.speechSynthesis.speak(utter);
-            }}
-        </script>
-        """, height=0)
-
     # DISPLAY CHAT HISTORY
     for msg in user_messages:
         avatar = "🎓" if msg["role"] == "assistant" else "👤"
@@ -491,132 +456,44 @@ else:
                 st.image(msg["image_url"], caption="Generated Illustration")
             st.markdown(msg["content"])
 
-    # ================= 3. DIRECT FUNCTIONING MIC COMPONENT =================
-    mic_html = """
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 10px 0;">
-        <div style="display: flex; align-items: center; gap: 14px;">
-            <button id="micBtn" type="button" style="
-                background: linear-gradient(45deg, #00f2fe, #ff007f);
-                border: 2px solid #ffffff;
-                color: #ffffff;
-                padding: 12px 30px;
-                border-radius: 28px;
-                font-weight: 800;
-                font-size: 15px;
-                cursor: pointer;
-                box-shadow: 0 0 22px rgba(0, 242, 254, 0.6);
-                letter-spacing: 1px;
-                outline: none;
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-            ">🎙️ TOUCH TO SPEAK (MICROPHONE)</button>
-            <span id="micStatus" style="color: #00ffcc; font-size: 14px; font-weight: 700;">Tap button & speak clearly</span>
-        </div>
-        <div id="heardBox" style="color: #ff80bf; font-size: 13px; margin-top: 5px; font-weight: bold;"></div>
-    </div>
+    # ================= 4. STREAMLIT DIRECT WORKING MIC =================
+    st.write("### 🎙️ Direct Voice Input (Tap Record, Speak in English, then Tap Stop)")
+    audio_val = st.audio_input("Record voice to speak with Zeno", label_visibility="collapsed")
+    
+    if audio_val is not None:
+        audio_bytes = audio_val.read()
+        with st.spinner("🎧 Transcribing your voice..."):
+            recognized_text = transcribe_audio_groq(audio_bytes)
+        
+        if recognized_text and recognized_text.strip():
+            user_prompt_audio = recognized_text.strip()
+            user_messages.append({"role": "user", "content": f"🗣️ {user_prompt_audio}"})
+            
+            with st.spinner("⚡ Zeno is thinking..."):
+                bot_reply = call_groq_api_robust(user_prompt_audio)
+                clean_r = bot_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
+                user_messages.append({"role": "assistant", "content": clean_r})
+            
+            if is_logged_in:
+                all_histories[current_user] = user_messages
+                save_data(HISTORY_FILE, all_histories)
+            
+            # Speak aloud
+            tts_js = f"""
+            <script>
+                if ('speechSynthesis' in window) {{
+                    window.speechSynthesis.cancel();
+                    const utter = new SpeechSynthesisUtterance("{clean_r[:220]}");
+                    utter.lang = 'en-US';
+                    window.speechSynthesis.speak(utter);
+                }}
+            </script>
+            """
+            st.components.v1.html(tts_js, height=0)
+            st.rerun()
 
-    <script>
-        const btn = document.getElementById('micBtn');
-        const status = document.getElementById('micStatus');
-        const heardBox = document.getElementById('heardBox');
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-        if (!SpeechRec) {
-            status.innerText = "Please open this site in Google Chrome on PC or Android.";
-        } else {
-            const rec = new SpeechRec();
-            rec.continuous = false;
-            rec.interimResults = false;
-            rec.lang = 'en-US';
-
-            let listening = false;
-
-            btn.onclick = async () => {
-                if (listening) {
-                    rec.stop();
-                    return;
-                }
-                try {
-                    // Direct media stream check to force Chrome permission popup
-                    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        stream.getTracks().forEach(t => t.stop());
-                    }
-                    rec.start();
-                    listening = true;
-                    status.innerText = "🔴 Listening... Speak in English now!";
-                    btn.style.background = "#ff0055";
-                    btn.innerText = "🛑 STOP LISTENING";
-                    heardBox.innerText = "";
-                } catch (err) {
-                    status.innerText = "Permission Denied! Click lock icon (🔒) near URL to Allow Mic.";
-                    resetUi();
-                }
-            };
-
-            rec.onresult = (e) => {
-                const transcript = e.results[0][0].transcript;
-                status.innerText = "Processing: " + transcript;
-                heardBox.innerText = "Zeno heard: '" + transcript + "'";
-
-                const parentDoc = window.parent.document;
-                const textarea = parentDoc.querySelector('textarea[aria-label="Ask Zeno or type \'image: car\' to generate..."]') ||
-                                 parentDoc.querySelector('textarea[data-testid="stChatInputTextArea"]');
-
-                if (textarea) {
-                    const proto = window.HTMLTextAreaElement.prototype;
-                    const nativeSet = Object.getOwnPropertyDescriptor(proto, "value").set;
-                    nativeSet.call(textarea, transcript);
-                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-
-                    setTimeout(() => {
-                        const submitBtn = parentDoc.querySelector('button[data-testid="stChatInputSubmitButton"]') ||
-                                          parentDoc.querySelector('button[kind="secondaryFormSubmit"]');
-                        if (submitBtn) {
-                            submitBtn.click();
-                        } else {
-                            const enterEvt = new KeyboardEvent('keydown', {
-                                bubbles: true,
-                                cancelable: true,
-                                key: 'Enter',
-                                code: 'Enter',
-                                keyCode: 13
-                            });
-                            textarea.dispatchEvent(enterEvt);
-                        }
-                    }, 400);
-                }
-                resetUi();
-            };
-
-            rec.onerror = (e) => {
-                if (e.error === 'not-allowed') {
-                    status.innerText = "Microphone blocked in Chrome. Please allow it in Site settings.";
-                } else if (e.error === 'no-speech') {
-                    status.innerText = "No speech detected. Tap and speak again.";
-                } else {
-                    status.innerText = "Error: " + e.error + ". Tap to retry.";
-                }
-                resetUi();
-            };
-
-            rec.onend = () => {
-                resetUi();
-            };
-
-            function resetUi() {
-                listening = false;
-                btn.style.background = "linear-gradient(45deg, #00f2fe, #ff007f)";
-                btn.innerText = "🎙️ TOUCH TO SPEAK (MICROPHONE)";
-            }
-        }
-    </script>
-    """
-    st.components.v1.html(mic_html, height=72)
-
-    # CHAT INPUT BOX
-    user_prompt = st.chat_input("Ask Zeno or type 'image: car' to generate...")
+    # CHAT TEXT INPUT
+    user_prompt = st.chat_input("Or type your English sentence here (e.g. 'image: car' or 'How to greet in office?')")
 
     if user_prompt:
         user_messages.append({"role": "user", "content": user_prompt})
@@ -630,7 +507,6 @@ else:
         with st.chat_message("assistant", avatar="🎓"):
             lower_input = user_prompt.lower().strip()
             
-            # AI Image Generation
             if lower_input.startswith("image:") or lower_input.startswith("generate image:"):
                 img_desc = user_prompt.split(":", 1)[1].strip()
                 encoded_desc = urllib.parse.quote(img_desc)
@@ -644,18 +520,6 @@ else:
                 if is_logged_in:
                     all_histories[current_user] = user_messages
                     save_data(HISTORY_FILE, all_histories)
-
-                tts_script = """
-                <script>
-                    if ('speechSynthesis' in window) {
-                        window.speechSynthesis.cancel();
-                        window.speechSynthesis.speak(new SpeechSynthesisUtterance("Here is the visual generated for you."));
-                    }
-                </script>
-                """
-                st.components.v1.html(tts_script, height=0)
-
-            # English Tutor Response
             else:
                 raw_reply = call_groq_api_robust(user_prompt)
                 clean_reply = raw_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
@@ -671,20 +535,9 @@ else:
                 <script>
                     if ('speechSynthesis' in window) {{
                         window.speechSynthesis.cancel();
-                        const speakNow = () => {{
-                            const voices = window.speechSynthesis.getVoices();
-                            const utterance = new SpeechSynthesisUtterance("{spoken_text}");
-                            const targetVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Female')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
-                            if (targetVoice) utterance.voice = targetVoice;
-                            utterance.pitch = 1.0;
-                            utterance.rate = 1.0;
-                            window.speechSynthesis.speak(utterance);
-                        }};
-                        if (window.speechSynthesis.getVoices().length > 0) {{
-                            speakNow();
-                        }} else {{
-                            window.speechSynthesis.onvoiceschanged = speakNow;
-                        }}
+                        const utter = new SpeechSynthesisUtterance("{spoken_text}");
+                        utter.lang = 'en-US';
+                        window.speechSynthesis.speak(utter);
                     }}
                 </script>
                 """
