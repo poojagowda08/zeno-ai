@@ -129,6 +129,15 @@ st.markdown("""
         box-shadow: 0 0 20px rgba(0, 242, 254, 0.2);
     }
 
+    .install-card {
+        background: rgba(10, 25, 55, 0.9);
+        border: 1.5px solid #00ffcc;
+        border-radius: 16px;
+        padding: 16px 20px;
+        margin-bottom: 14px;
+        box-shadow: 0 0 20px rgba(0, 255, 204, 0.25);
+    }
+
     .visible-box {
         background: rgba(15, 23, 58, 0.85);
         border: 1px solid #00ffcc;
@@ -185,13 +194,15 @@ def call_groq_api_robust(prompt):
 
     system_instruction = (
         "You are Zeno, a dedicated, highly skilled English language coach and tutor. "
-        "Your top priority is to teach English, improve fluency, correct grammar, and build communication confidence. "
+        "Your top priority is to teach English, improve fluency, correct grammar, explain uploaded files or images clearly, "
+        "and build communication confidence. "
         "Rules for responding:\n"
-        "1. If the user's input has ANY grammatical error, immediately give the corrected version clearly, then explain briefly.\n"
-        "2. If the user writes or asks how to say something in English, teach them the natural spoken way.\n"
-        "3. Teach practical vocabulary and conversation phrases.\n"
-        "4. Keep responses concise, direct, and conversational (2 to 3 sentences maximum) suitable for speech output.\n"
-        "5. Never use markdown symbols like asterisks, hashes, or bullet points."
+        "1. If an image or file is uploaded, explain what it is, its meaning, vocabulary related to it, and how to talk about it in fluent English.\n"
+        "2. If the user's input has ANY grammatical error, immediately give the corrected version clearly, then explain briefly.\n"
+        "3. If the user writes or asks how to say something in English, teach them the natural spoken way.\n"
+        "4. Teach practical vocabulary and conversation phrases.\n"
+        "5. Keep responses concise, direct, and conversational (2 to 4 sentences maximum) suitable for speech output.\n"
+        "6. Never use markdown symbols like asterisks, hashes, or bullet points."
     )
 
     last_error = ""
@@ -264,7 +275,7 @@ if not is_logged_in and time_limit_reached:
         <div style="color: #ff007f; font-weight: 800; letter-spacing: 2px;">⚠️ 1-MINUTE FREE TRIAL COMPLETED</div>
         <div class="zeno-brand">⚡ ZENO AI ⚡</div>
         <p style="color: #e0f7fa; font-size: 1.05rem; margin-top: 5px;">
-            Ondu sala <b>Sign In</b> athava <b>Sign Up</b> maadi. Chat history Left sidebar nalli save aagirathe!
+            Ondu sala <b>Sign In</b> athava <b>Sign Up</b> maadi. Admele yavathoo login kelalla, permanent aagi chat save aagirathe!
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -344,7 +355,7 @@ else:
             ]
         user_messages = all_histories[current_user]
 
-    # ================= LEFT SIDEBAR (SAVED CHAT HISTORY VIEWER) =================
+    # ================= LEFT SIDEBAR (SAVED CHAT HISTORY) =================
     with st.sidebar:
         st.markdown('<div class="zeno-brand" style="font-size: 1.5rem;">📁 CHAT HISTORY</div>', unsafe_allow_html=True)
         st.caption(f"User: **{current_user}**")
@@ -361,18 +372,15 @@ else:
         st.markdown("---")
         st.markdown("### 💬 Saved Conversations")
         
-        # Display conversation list items
         if len(user_messages) <= 1:
             st.write("No previous conversations yet.")
         else:
-            # Show previews of user messages
             user_queries = [m["content"] for m in user_messages if m["role"] == "user"]
-            for idx, query in enumerate(reversed(user_queries[-15:])):
+            for query in reversed(user_queries[-15:]):
                 preview_text = query[:28] + "..." if len(query) > 28 else query
                 st.markdown(f"🗨️ **{preview_text}**")
 
         st.markdown("---")
-        # Download Chat History directly from left sidebar
         chat_json_str = json.dumps(user_messages, indent=2)
         st.download_button("📥 Export JSON History", data=chat_json_str, file_name=f"{current_user}_chat.json", mime="application/json", use_container_width=True)
 
@@ -384,33 +392,59 @@ else:
                 st.session_state.spoken_daily_topic = False
                 st.rerun()
 
-    # ================= MAIN CHAT CONTENT =================
+    # ================= MAIN CONTENT HEADER =================
     head_col1, head_col2 = st.columns([3, 1])
     with head_col1:
         st.markdown('<div class="zeno-brand">⚡ ZENO AI | ENGLISH COACH ⚡</div>', unsafe_allow_html=True)
         if not is_logged_in:
             st.markdown(f'<div class="storage-badge" style="border-color: #ff007f; color: #ff80bf;">⏳ Free Trial: <b>{remaining_sec}s left</b></div>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div class="storage-badge">✅ Saved in Left Sidebar | User: <b>{current_user}</b> ({len(user_messages)} msgs)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="storage-badge">✅ Permanent Login: <b>{current_user}</b> | Left Sidebar History Active ({len(user_messages)} msgs)</div>', unsafe_allow_html=True)
 
-    # DIRECT VISIBLE FILE / PHOTO / AUDIO UPLOAD PANEL
-    st.markdown('<div class="visible-box"><b>📤 Direct Media & File Uploader (Photos, Audio, Documents)</b></div>', unsafe_allow_html=True)
+    # ================= 1. HOW TO DOWNLOAD & INSTALL APP (IN ENGLISH) =================
+    st.markdown("""
+    <div class="install-card">
+        <div style="color: #00ffcc; font-family: 'Orbitron'; font-size: 1.15rem; font-weight: bold; margin-bottom: 6px;">
+            📲 How to Download & Install Zeno AI App
+        </div>
+        <div style="color: #e0f7fa; font-size: 1rem; line-height: 1.6;">
+            <b>For Android & PC (Google Chrome):</b><br/>
+            1. Open this website in your <b>Chrome Browser</b>.<br/>
+            2. Tap the <b>3 dots menu (⋮)</b> in the top right corner.<br/>
+            3. Tap <b>"Install app"</b> or <b>"Add to Home screen"</b>.<br/>
+            4. Click <b>"Install"</b>. The Zeno AI icon will appear directly on your home screen or desktop like a native app.<br/>
+            <br/>
+            <b>For iPhone (Safari):</b><br/>
+            1. Tap the <b>Share Button</b> at the bottom of the screen.<br/>
+            2. Scroll down and tap <b>"Add to Home Screen"</b>.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ================= 2. DIRECT IMAGE & FILE EXPLANATION PANEL =================
+    st.markdown('<div class="visible-box"><b>🖼️ Send Image or File to Zeno for Instant English Explanation</b></div>', unsafe_allow_html=True)
     up_c1, up_c2 = st.columns([2, 1])
     with up_c1:
-        up_file = st.file_uploader("Upload Image, Audio, or Notes here", type=["png", "jpg", "jpeg", "mp3", "wav", "pdf", "txt"], key="main_visible_uploader", label_visibility="collapsed")
-        file_msg = st.text_input("Message with file (Optional):", placeholder="e.g. Please check my sentence or image grammar", key="direct_file_caption")
+        up_file = st.file_uploader("Upload Image, Document, or Audio", type=["png", "jpg", "jpeg", "mp3", "wav", "pdf", "txt"], key="main_visible_uploader", label_visibility="collapsed")
+        file_msg = st.text_input("Ask Zeno about this file (Optional):", placeholder="e.g. Explain this image in simple English and teach me new words", key="direct_file_caption")
     with up_c2:
         if up_file:
             st.success(f"Attached: {up_file.name}")
             if up_file.type.startswith("image/"):
-                st.image(up_file, width=140)
+                st.image(up_file, width=150)
             elif up_file.type.startswith("audio/"):
                 st.audio(up_file)
-            if st.button("📤 Send File to Zeno", use_container_width=True):
-                caption_txt = file_msg if file_msg.strip() else f"I have uploaded file {up_file.name}. Please explain or correct me."
-                user_messages.append({"role": "user", "content": f"📎 [File: {up_file.name}] {caption_txt}"})
-                prompt_for_ai = f"User uploaded file '{up_file.name}'. Message: '{caption_txt}'. Respond as an English coach."
-                bot_reply = call_groq_api_robust(prompt_for_ai)
+            if st.button("📤 Explain this with Zeno AI", use_container_width=True):
+                user_question = file_msg if file_msg.strip() else f"Please explain this uploaded image or file named {up_file.name}. Describe what you see and teach me how to talk about it in fluent English."
+                user_messages.append({"role": "user", "content": f"📎 [Uploaded: {up_file.name}] {user_question}"})
+                
+                ai_prompt = (
+                    f"The user has uploaded a file named '{up_file.name}' of type '{up_file.type}'. "
+                    f"The user prompt is: '{user_question}'. "
+                    "As an expert English tutor, explain the topic clearly, describe key visual/content points in simple sentences, "
+                    "provide 2 useful vocabulary words related to it, and give a natural English phrase they can practice speaking."
+                )
+                bot_reply = call_groq_api_robust(ai_prompt)
                 clean_r = bot_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
                 user_messages.append({"role": "assistant", "content": clean_r})
                 if is_logged_in:
@@ -457,35 +491,39 @@ else:
                 st.image(msg["image_url"], caption="Generated Illustration")
             st.markdown(msg["content"])
 
-    # ================= 100% WORKING DIRECT MIC COMPONENT =================
+    # ================= 3. DIRECT FUNCTIONING MIC COMPONENT =================
     mic_html = """
-    <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 10px 0;">
-        <button id="micBtn" type="button" style="
-            background: linear-gradient(45deg, #00f2fe, #ff007f);
-            border: 2px solid #ffffff;
-            color: #ffffff;
-            padding: 12px 28px;
-            border-radius: 26px;
-            font-weight: 800;
-            font-size: 15px;
-            cursor: pointer;
-            box-shadow: 0 0 22px rgba(0, 242, 254, 0.6);
-            letter-spacing: 1px;
-            outline: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        ">🎙️ TOUCH TO SPEAK</button>
-        <span id="micStatus" style="color: #00ffcc; font-size: 13px; font-weight: 700;">Tap button & speak clearly</span>
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 10px 0;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <button id="micBtn" type="button" style="
+                background: linear-gradient(45deg, #00f2fe, #ff007f);
+                border: 2px solid #ffffff;
+                color: #ffffff;
+                padding: 12px 30px;
+                border-radius: 28px;
+                font-weight: 800;
+                font-size: 15px;
+                cursor: pointer;
+                box-shadow: 0 0 22px rgba(0, 242, 254, 0.6);
+                letter-spacing: 1px;
+                outline: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            ">🎙️ TOUCH TO SPEAK (MICROPHONE)</button>
+            <span id="micStatus" style="color: #00ffcc; font-size: 14px; font-weight: 700;">Tap button & speak clearly</span>
+        </div>
+        <div id="heardBox" style="color: #ff80bf; font-size: 13px; margin-top: 5px; font-weight: bold;"></div>
     </div>
 
     <script>
         const btn = document.getElementById('micBtn');
         const status = document.getElementById('micStatus');
+        const heardBox = document.getElementById('heardBox');
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (!SpeechRec) {
-            status.innerText = "Please open in Google Chrome on PC/Mobile.";
+            status.innerText = "Please open this site in Google Chrome on PC or Android.";
         } else {
             const rec = new SpeechRec();
             rec.continuous = false;
@@ -500,27 +538,28 @@ else:
                     return;
                 }
                 try {
-                    // Force browser to prompt microphone permission
+                    // Direct media stream check to force Chrome permission popup
                     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        stream.getTracks().forEach(track => track.stop());
+                        stream.getTracks().forEach(t => t.stop());
                     }
                     rec.start();
                     listening = true;
-                    status.innerText = "🔴 Listening... Speak now!";
+                    status.innerText = "🔴 Listening... Speak in English now!";
                     btn.style.background = "#ff0055";
                     btn.innerText = "🛑 STOP LISTENING";
+                    heardBox.innerText = "";
                 } catch (err) {
-                    status.innerText = "Permission Denied! Click lock icon in browser URL to Allow Mic.";
+                    status.innerText = "Permission Denied! Click lock icon (🔒) near URL to Allow Mic.";
                     resetUi();
                 }
             };
 
             rec.onresult = (e) => {
                 const transcript = e.results[0][0].transcript;
-                status.innerText = "Heard: " + transcript;
+                status.innerText = "Processing: " + transcript;
+                heardBox.innerText = "Zeno heard: '" + transcript + "'";
 
-                // Find textarea in parent streamlit window
                 const parentDoc = window.parent.document;
                 const textarea = parentDoc.querySelector('textarea[aria-label="Ask Zeno or type \'image: car\' to generate..."]') ||
                                  parentDoc.querySelector('textarea[data-testid="stChatInputTextArea"]');
@@ -553,9 +592,11 @@ else:
 
             rec.onerror = (e) => {
                 if (e.error === 'not-allowed') {
-                    status.innerText = "Microphone blocked. Allow it in site settings!";
+                    status.innerText = "Microphone blocked in Chrome. Please allow it in Site settings.";
+                } else if (e.error === 'no-speech') {
+                    status.innerText = "No speech detected. Tap and speak again.";
                 } else {
-                    status.innerText = "Try tapping again.";
+                    status.innerText = "Error: " + e.error + ". Tap to retry.";
                 }
                 resetUi();
             };
@@ -567,12 +608,12 @@ else:
             function resetUi() {
                 listening = false;
                 btn.style.background = "linear-gradient(45deg, #00f2fe, #ff007f)";
-                btn.innerText = "🎙️ TOUCH TO SPEAK";
+                btn.innerText = "🎙️ TOUCH TO SPEAK (MICROPHONE)";
             }
         }
     </script>
     """
-    st.components.v1.html(mic_html, height=58)
+    st.components.v1.html(mic_html, height=72)
 
     # CHAT INPUT BOX
     user_prompt = st.chat_input("Ask Zeno or type 'image: car' to generate...")
