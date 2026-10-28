@@ -96,70 +96,58 @@ if "messages" not in st.session_state:
         {"role": "assistant", "content": "Zeno core systems active. Ask me anything!"}
     ]
 
-# ----------------- DYNAMIC MODEL SELECTION & API CALL -----------------
+# ----------------- RELIABLE GROQ API CALL -----------------
 groq_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
-
-def get_active_model(api_token):
-    url = "https://api.groq.com/openai/v1/models"
-    headers = {
-        "Authorization": f"Bearer {api_token}",
-        "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
-    req = urllib.request.Request(url, headers=headers, method="GET")
-    with urllib.request.urlopen(req, timeout=10) as response:
-        data = json.loads(response.read().decode("utf-8"))
-        # Filter for text models only (skipping whisper/audio models)
-        for m in data.get("data", []):
-            m_id = m.get("id", "")
-            if "whisper" not in m_id and "guard" not in m_id:
-                return m_id
-    return "gemma2-9b-it"
 
 def call_groq_api(prompt, api_token):
     clean_token = api_token.strip().replace('"', '').replace("'", "")
-    
-    # Auto-detect working model from your account
-    try:
-        active_model = get_active_model(clean_token)
-    except Exception:
-        active_model = "gemma2-9b-it"
-
     url = "https://api.groq.com/openai/v1/chat/completions"
+    
     headers = {
         "Authorization": f"Bearer {clean_token}",
         "Content-Type": "application/json",
         "Accept": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
-    
-    payload = {
-        "model": active_model,
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are Zeno, a hyper-intelligent, polite, and friendly voice assistant. Keep answers brief, natural and conversational (1 to 2 short sentences). Never use asterisks or markdown symbols."
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "temperature": 0.6
-    }
-    
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-    
-    try:
-        with urllib.request.urlopen(req, timeout=20) as response:
-            result = json.loads(response.read().decode("utf-8"))
-            return result["choices"][0]["message"]["content"]
-    except urllib.error.HTTPError as e:
-        error_details = e.read().decode("utf-8")
-        return f"Groq Server Error ({e.code}): {error_details}"
-    except Exception as e:
-        return f"Request Error: {str(e)}"
+
+    # Standard public chat models (No terms acceptance required)
+    fallback_models = ["gemma2-9b-it", "mixtral-8x7b-32768", "llama3-70b-8192"]
+
+    last_error = ""
+    for model_name in fallback_models:
+        payload = {
+            "model": model_name,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are Zeno, a hyper-intelligent, polite, and friendly voice assistant. Keep answers brief, natural and conversational (1 to 2 short sentences). Never use asterisks or markdown symbols."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "temperature": 0.6
+        }
+
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+
+        try:
+            with urllib.request.urlopen(req, timeout=20) as response:
+                result = json.loads(response.read().decode("utf-8"))
+                return result["choices"][0]["message"]["content"]
+        except urllib.error.HTTPError as e:
+            error_details = e.read().decode("utf-8")
+            last_error = f"Groq Server Error ({e.code}): {error_details}"
+            # Automatically skip if model requires agreement or doesn't exist
+            if any(k in error_details for k in ["model_terms_required", "model_decommissioned", "model_not_found"]):
+                continue
+            return last_error
+        except Exception as e:
+            return f"Request Error: {str(e)}"
+
+    return last_error
 
 # ----------------- SCREEN 1: CLICK TO ENTER -----------------
 if not st.session_state.app_entered:
