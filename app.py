@@ -11,7 +11,7 @@ from PIL import Image
 
 # ----------------- PAGE CONFIG -----------------
 st.set_page_config(
-    page_title="ZENO AI | English Coach & Smart Auth",
+    page_title="ZENO AI | English Coach",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -39,7 +39,6 @@ def save_data(filename, data):
 
 # ----------------- PASSWORD STRENGTH CHECK -----------------
 def is_strong_password(password):
-    # Min 8 chars, at least 1 digit, at least 1 special char
     if len(password) < 8:
         return False, "Password must be at least 8 characters long."
     if not re.search(r"\d", password):
@@ -181,31 +180,13 @@ if "guest_messages" not in st.session_state:
         {"role": "assistant", "content": "Welcome! I am Zeno, your English coach. Speak or type to practice. You have 1 minute of free interaction!"}
     ]
 
-# ----------------- GROQ API HELPER (ENGLISH COACH) -----------------
-groq_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+# ----------------- MULTI-KEY HIGH-CONCURRENCY API CALLER -----------------
+raw_keys = st.secrets.get("GROQ_API_KEYS", "") or st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+API_KEYS = [k.strip() for k in raw_keys.split(",") if k.strip()]
 
-def call_groq_api(prompt, api_token):
-    clean_token = api_token.strip().replace('"', '').replace("'", "")
-    models_url = "https://api.groq.com/openai/v1/models"
-    headers = {
-        "Authorization": f"Bearer {clean_token}",
-        "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
-
-    try:
-        req_models = urllib.request.Request(models_url, headers=headers, method="GET")
-        with urllib.request.urlopen(req_models, timeout=10) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            available_models = [
-                m["id"] for m in data.get("data", [])
-                if not any(x in m["id"] for x in ["whisper", "guard", "orpheus"])
-            ]
-    except Exception:
-        available_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-
-    chat_url = "https://api.groq.com/openai/v1/chat/completions"
-    headers["Content-Type"] = "application/json"
+def call_groq_api_robust(prompt):
+    if not API_KEYS:
+        return "GROQ_API_KEY Missing! Streamlit Secrets nalli add maadi."
 
     system_instruction = (
         "You are Zeno, a dedicated, highly skilled English language coach and tutor. "
@@ -218,39 +199,54 @@ def call_groq_api(prompt, api_token):
         "5. Never use markdown symbols like asterisks, hashes, or bullet points."
     )
 
-    for selected_model in available_models:
-        payload = {
-            "model": selected_model,
-            "messages": [
-                {"role": "system", "content": system_instruction},
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": 0.5
+    models_to_try = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
+
+    # Iterate through keys and models with retry to prevent server crash
+    for key in API_KEYS:
+        clean_token = key.replace('"', '').replace("'", "")
+        chat_url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {clean_token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
 
-        body_data = json.dumps(payload).encode("utf-8")
-        req_chat = urllib.request.Request(chat_url, data=body_data, headers=headers, method="POST")
+        for model_name in models_to_try:
+            payload = {
+                "model": model_name,
+                "messages": [
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.5
+            }
+            body_data = json.dumps(payload).encode("utf-8")
 
-        try:
-            with urllib.request.urlopen(req_chat, timeout=20) as chat_resp:
-                res = json.loads(chat_resp.read().decode("utf-8"))
-                return res["choices"][0]["message"]["content"]
-        except urllib.error.HTTPError as e:
-            err_msg = e.read().decode("utf-8")
-            if any(k in err_msg for k in ["model_decommissioned", "model_not_found", "model_terms_required"]):
-                continue
-            return f"Groq Error ({e.code}): {err_msg}"
-        except Exception as e:
-            return f"Request Error: {str(e)}"
+            # Try up to 2 times with slight delay on rate limits
+            for attempt in range(2):
+                req = urllib.request.Request(chat_url, data=body_data, headers=headers, method="POST")
+                try:
+                    with urllib.request.urlopen(req, timeout=12) as response:
+                        res = json.loads(response.read().decode("utf-8"))
+                        return res["choices"][0]["message"]["content"]
+                except urllib.error.HTTPError as e:
+                    # On Rate Limit (429) or Server Overload (503), wait 1 sec or switch key
+                    if e.code in [429, 503]:
+                        time.sleep(1)
+                        continue
+                    break
+                except Exception:
+                    break
 
-    return "Service busy. Please try again."
+    return "Servers are experiencing high demand. Please repeat your sentence in a moment!"
 
 # ----------------- 1-MINUTE TIME CALCULATION -----------------
 elapsed_seconds = int(time.time() - st.session_state.guest_start_time)
 is_guest = st.session_state.logged_in_user is None
 time_limit_reached = is_guest and (elapsed_seconds >= 60)
 
-# ----------------- AUTHENTICATION OVERLAY (WHEN 1 MINUTE EXPIRES) -----------------
+# ----------------- AUTHENTICATION OVERLAY -----------------
 if time_limit_reached:
     st.markdown("""
     <div class="enter-card">
@@ -279,7 +275,6 @@ if time_limit_reached:
                     st.session_state.logged_in_user = login_id
                     st.session_state.spoken_daily_topic = False
                     
-                    # Merge guest chat into permanent user chat
                     all_histories = load_data(HISTORY_FILE, {})
                     if login_id not in all_histories:
                         all_histories[login_id] = st.session_state.guest_messages
@@ -296,7 +291,7 @@ if time_limit_reached:
 
     with auth_tab2:
         st.subheader("New User Registration")
-        st.info("Password rules: Minimum 8 characters, at least 1 number, and 1 special symbol (e.g. @, #, $, %).")
+        st.info("Password rules: Minimum 8 characters, at least 1 number, and 1 special symbol (@, #, $, %).")
         new_id = st.text_input("Choose Username", key="reg_id")
         new_pwd = st.text_input("Create Password", type="password", key="reg_pwd")
         new_pwd_confirm = st.text_input("Confirm Password", type="password", key="reg_pwd_confirm")
@@ -317,7 +312,6 @@ if time_limit_reached:
                 st.session_state.logged_in_user = new_id
                 st.session_state.spoken_daily_topic = False
 
-                # Save guest chat into new user history
                 all_histories = load_data(HISTORY_FILE, {})
                 all_histories[new_id] = st.session_state.guest_messages
                 save_data(HISTORY_FILE, all_histories)
@@ -325,7 +319,7 @@ if time_limit_reached:
                 st.success("Account created successfully! Resuming...")
                 st.rerun()
 
-# ----------------- MAIN TUTOR DASHBOARD (ACTIVE DURING TRIAL & AFTER LOGIN) -----------------
+# ----------------- MAIN TUTOR DASHBOARD -----------------
 else:
     all_histories = load_data(HISTORY_FILE, {})
     today_topic = get_today_topic()
@@ -396,15 +390,23 @@ else:
                 utter.onend = () => {{
                     window.dispatchEvent(new CustomEvent('zeno_speech_ended'));
                 }};
-                window.speechSynthesis.speak(utter);
+                window.speechSynthesis.speak(utterance);
             }}
         </script>
         """, height=0)
 
-    # UPLOADS SECTION
-    with st.expander("📂 UPLOAD PHOTOS / AUDIO / FILES & EXPORT", expanded=False):
+    # UPLOADS & INSTALL GUIDE SECTION
+    with st.expander("📲 HOW TO INSTALL APP ON MOBILE & MEDIA UPLOAD", expanded=False):
         c_up1, c_up2 = st.columns([1.5, 1.5])
         with c_up1:
+            st.markdown("""
+            ### 📱 Install Zeno AI as Mobile App:
+            1. Open this website in **Chrome Browser**.
+            2. Tap the **3 dots menu (⋮)** in the top right corner.
+            3. Tap **"Install app"** or **"Add to Home screen"**.
+            4. Done! Zeno AI will now open like a real mobile app from your home screen.
+            """)
+            st.markdown("---")
             up_file = st.file_uploader(
                 "Choose Photo, Audio or Document",
                 type=["png", "jpg", "jpeg", "mp3", "wav", "pdf", "txt"],
@@ -424,7 +426,7 @@ else:
                     user_messages.append({"role": "user", "content": f"📎 [Attached: {up_file.name}] {user_text}"})
                     
                     prompt_for_ai = f"The user uploaded file '{up_file.name}'. Message: '{user_text}'. Respond as an English coach teaching them."
-                    bot_reply = call_groq_api(prompt_for_ai, groq_key)
+                    bot_reply = call_groq_api_robust(prompt_for_ai)
                     bot_reply = bot_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
                     
                     user_messages.append({"role": "assistant", "content": bot_reply})
@@ -641,45 +643,42 @@ else:
                 """
                 st.components.v1.html(tts_script, height=0)
 
-            # 2. CORE ENGLISH TEACHING & COACHING ENGINE
+            # 2. CORE ROBUST ENGLISH TEACHING & COACHING ENGINE
             else:
-                if not groq_key:
-                    st.error("GROQ_API_KEY Missing! Streamlit Secrets nalli GROQ_API_KEY add maadi.")
-                else:
-                    raw_reply = call_groq_api(user_prompt, groq_key)
-                    clean_reply = raw_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
-                    st.markdown(clean_reply)
+                raw_reply = call_groq_api_robust(user_prompt)
+                clean_reply = raw_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
+                st.markdown(clean_reply)
 
-                    user_messages.append({"role": "assistant", "content": clean_reply})
-                    if not is_guest:
-                        all_histories[current_user] = user_messages
-                        save_data(HISTORY_FILE, all_histories)
+                user_messages.append({"role": "assistant", "content": clean_reply})
+                if not is_guest:
+                    all_histories[current_user] = user_messages
+                    save_data(HISTORY_FILE, all_histories)
 
-                    spoken_text = clean_reply[:250].replace("\\", "")
-                    tts_js = f"""
-                    <script>
-                        if ('speechSynthesis' in window) {{
-                            window.speechSynthesis.cancel();
-                            const speakNow = () => {{
-                                const voices = window.speechSynthesis.getVoices();
-                                const utterance = new SpeechSynthesisUtterance("{spoken_text}");
-                                const targetVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Female')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
-                                if (targetVoice) utterance.voice = targetVoice;
-                                utterance.pitch = 1.0;
-                                utterance.rate = 1.0;
-                                
-                                utterance.onend = () => {{
-                                    window.dispatchEvent(new CustomEvent('zeno_speech_ended'));
-                                }};
-                                
-                                window.speechSynthesis.speak(utterance);
+                spoken_text = clean_reply[:250].replace("\\", "")
+                tts_js = f"""
+                <script>
+                    if ('speechSynthesis' in window) {{
+                        window.speechSynthesis.cancel();
+                        const speakNow = () => {{
+                            const voices = window.speechSynthesis.getVoices();
+                            const utterance = new SpeechSynthesisUtterance("{spoken_text}");
+                            const targetVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Female')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
+                            if (targetVoice) utterance.voice = targetVoice;
+                            utterance.pitch = 1.0;
+                            utterance.rate = 1.0;
+                            
+                            utterance.onend = () => {{
+                                window.dispatchEvent(new CustomEvent('zeno_speech_ended'));
                             }};
-                            if (window.speechSynthesis.getVoices().length > 0) {{
-                                speakNow();
-                            }} else {{
-                                window.speechSynthesis.onvoiceschanged = speakNow;
-                            }}
+                            
+                            window.speechSynthesis.speak(utterance);
+                        }};
+                        if (window.speechSynthesis.getVoices().length > 0) {{
+                            speakNow();
+                        }} else {{
+                            window.speechSynthesis.onvoiceschanged = speakNow;
                         }}
-                    </script>
-                    """
-                    st.components.v1.html(tts_js, height=0)
+                    }}
+                </script>
+                """
+                st.components.v1.html(tts_js, height=0)
