@@ -96,27 +96,41 @@ if "messages" not in st.session_state:
         {"role": "assistant", "content": "Zeno core systems active. Ask me anything!"}
     ]
 
-# ----------------- RELIABLE GROQ API CALL -----------------
+# ----------------- GROQ API HELPER WITH AUTO-DISCOVERY -----------------
 groq_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
 
 def call_groq_api(prompt, api_token):
     clean_token = api_token.strip().replace('"', '').replace("'", "")
-    url = "https://api.groq.com/openai/v1/chat/completions"
     
+    # 1. Fetch live models available for this API key
+    models_url = "https://api.groq.com/openai/v1/models"
     headers = {
         "Authorization": f"Bearer {clean_token}",
-        "Content-Type": "application/json",
         "Accept": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
-    # Only currently supported official Groq models
-    supported_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+    try:
+        req_models = urllib.request.Request(models_url, headers=headers, method="GET")
+        with urllib.request.urlopen(req_models, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            available_models = [
+                m["id"] for m in data.get("data", [])
+                if not any(x in m["id"] for x in ["whisper", "guard", "vision", "orpheus"])
+            ]
+    except Exception as e:
+        return f"Cannot fetch Groq models: {str(e)}"
 
-    last_error = ""
-    for model_name in supported_models:
+    if not available_models:
+        return "No text models found for this Groq key."
+
+    # 2. Call completions using the first available text model
+    chat_url = "https://api.groq.com/openai/v1/chat/completions"
+    headers["Content-Type"] = "application/json"
+
+    for selected_model in available_models:
         payload = {
-            "model": model_name,
+            "model": selected_model,
             "messages": [
                 {
                     "role": "system",
@@ -130,23 +144,22 @@ def call_groq_api(prompt, api_token):
             "temperature": 0.6
         }
 
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+        body_data = json.dumps(payload).encode("utf-8")
+        req_chat = urllib.request.Request(chat_url, data=body_data, headers=headers, method="POST")
 
         try:
-            with urllib.request.urlopen(req, timeout=20) as response:
-                result = json.loads(response.read().decode("utf-8"))
-                return result["choices"][0]["message"]["content"]
+            with urllib.request.urlopen(req_chat, timeout=20) as chat_resp:
+                res = json.loads(chat_resp.read().decode("utf-8"))
+                return res["choices"][0]["message"]["content"]
         except urllib.error.HTTPError as e:
-            error_details = e.read().decode("utf-8")
-            last_error = f"Groq Server Error ({e.code}): {error_details}"
-            if "model_decommissioned" in error_details or "model_not_found" in error_details:
+            err_msg = e.read().decode("utf-8")
+            if any(k in err_msg for k in ["model_decommissioned", "model_not_found", "model_terms_required"]):
                 continue
-            return last_error
+            return f"Groq Error ({e.code}): {err_msg}"
         except Exception as e:
             return f"Request Error: {str(e)}"
 
-    return last_error
+    return f"None of the available models worked. Models found: {available_models}"
 
 # ----------------- SCREEN 1: CLICK TO ENTER -----------------
 if not st.session_state.app_entered:
