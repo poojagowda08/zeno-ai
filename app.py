@@ -14,7 +14,7 @@ st.set_page_config(
     page_title="ZENO AI | English Coach Core",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # ----------------- DATABASE / PERSISTENCE -----------------
@@ -91,6 +91,11 @@ st.markdown("""
         font-family: 'Rajdhani', sans-serif;
     }
 
+    [data-testid="stSidebar"] {
+        background-color: #080c24 !important;
+        border-right: 1.5px solid #00f2fe;
+    }
+
     .zeno-brand {
         font-family: 'Orbitron', sans-serif;
         font-size: 2.2rem;
@@ -153,7 +158,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SESSION STATE & PERMANENT LOGIN -----------------
+# ----------------- SESSION STATE & LOGIN PERSISTENCE -----------------
 query_user = st.query_params.get("user", "")
 
 if "logged_in_user" not in st.session_state:
@@ -167,10 +172,10 @@ if "spoken_daily_topic" not in st.session_state:
 
 if "guest_messages" not in st.session_state:
     st.session_state.guest_messages = [
-        {"role": "assistant", "content": "Welcome! I am Zeno, your English coach. Speak or type to practice. You have 1 minute free trial!"}
+        {"role": "assistant", "content": "Welcome! I am Zeno, your English coach. Speak or type to practice!"}
     ]
 
-# ----------------- DYNAMIC MODEL GROQ CALLER -----------------
+# ----------------- GROQ API CALLER -----------------
 def call_groq_api_robust(prompt):
     raw_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
     if not raw_key:
@@ -199,7 +204,6 @@ def call_groq_api_robust(prompt):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
 
-        # Auto-fetch live models active on Groq
         models_url = "https://api.groq.com/openai/v1/models"
         available_models = []
         try:
@@ -260,7 +264,7 @@ if not is_logged_in and time_limit_reached:
         <div style="color: #ff007f; font-weight: 800; letter-spacing: 2px;">⚠️ 1-MINUTE FREE TRIAL COMPLETED</div>
         <div class="zeno-brand">⚡ ZENO AI ⚡</div>
         <p style="color: #e0f7fa; font-size: 1.05rem; margin-top: 5px;">
-            Ondu sala <b>Sign In</b> athava <b>Sign Up</b> maadi. Admele yavathoo login kelalla, permanent aagi chat save aaguththe.
+            Ondu sala <b>Sign In</b> athava <b>Sign Up</b> maadi. Chat history Left sidebar nalli save aagirathe!
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -323,7 +327,7 @@ if not is_logged_in and time_limit_reached:
                 save_data(HISTORY_FILE, all_histories)
                 st.rerun()
 
-# ----------------- MAIN TUTOR SCREEN (CONTINUOUS CONVERSATION) -----------------
+# ----------------- MAIN TUTOR SCREEN (WITH LEFT SIDEBAR HISTORY) -----------------
 else:
     all_histories = load_data(HISTORY_FILE, {})
     today_topic = get_today_topic()
@@ -340,17 +344,12 @@ else:
             ]
         user_messages = all_histories[current_user]
 
-    # TOP HEADER WITH PERMANENT BADGE & CONTROLS
-    head_col1, head_col2, head_col3 = st.columns([2.5, 0.8, 0.7])
-    with head_col1:
-        st.markdown('<div class="zeno-brand">⚡ ZENO AI | ENGLISH COACH ⚡</div>', unsafe_allow_html=True)
-        if not is_logged_in:
-            st.markdown(f'<div class="storage-badge" style="border-color: #ff007f; color: #ff80bf;">⏳ Free Trial: <b>{remaining_sec}s left</b> (1 min aadmelle sign up)</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="storage-badge">✅ Permanent Login: <b>{current_user}</b> | Storage: <code>{HISTORY_FILE}</code> ({len(user_messages)} msgs)</div>', unsafe_allow_html=True)
+    # ================= LEFT SIDEBAR (SAVED CHAT HISTORY VIEWER) =================
+    with st.sidebar:
+        st.markdown('<div class="zeno-brand" style="font-size: 1.5rem;">📁 CHAT HISTORY</div>', unsafe_allow_html=True)
+        st.caption(f"User: **{current_user}**")
 
-    with head_col2:
-        if st.button("➕ New Chat", use_container_width=True):
+        if st.button("➕ New Chat Session", use_container_width=True):
             new_welcome = f"Hello {current_user}! Fresh conversation started. What would you like to practice now?"
             if not is_logged_in:
                 st.session_state.guest_messages = [{"role": "assistant", "content": new_welcome}]
@@ -359,7 +358,24 @@ else:
                 save_data(HISTORY_FILE, all_histories)
             st.rerun()
 
-    with head_col3:
+        st.markdown("---")
+        st.markdown("### 💬 Saved Conversations")
+        
+        # Display conversation list items
+        if len(user_messages) <= 1:
+            st.write("No previous conversations yet.")
+        else:
+            # Show previews of user messages
+            user_queries = [m["content"] for m in user_messages if m["role"] == "user"]
+            for idx, query in enumerate(reversed(user_queries[-15:])):
+                preview_text = query[:28] + "..." if len(query) > 28 else query
+                st.markdown(f"🗨️ **{preview_text}**")
+
+        st.markdown("---")
+        # Download Chat History directly from left sidebar
+        chat_json_str = json.dumps(user_messages, indent=2)
+        st.download_button("📥 Export JSON History", data=chat_json_str, file_name=f"{current_user}_chat.json", mime="application/json", use_container_width=True)
+
         if is_logged_in:
             if st.button("🚪 Sign Out", use_container_width=True):
                 st.session_state.logged_in_user = None
@@ -368,7 +384,16 @@ else:
                 st.session_state.spoken_daily_topic = False
                 st.rerun()
 
-    # 1. DIRECT VISIBLE FILE / PHOTO / AUDIO UPLOAD PANEL
+    # ================= MAIN CHAT CONTENT =================
+    head_col1, head_col2 = st.columns([3, 1])
+    with head_col1:
+        st.markdown('<div class="zeno-brand">⚡ ZENO AI | ENGLISH COACH ⚡</div>', unsafe_allow_html=True)
+        if not is_logged_in:
+            st.markdown(f'<div class="storage-badge" style="border-color: #ff007f; color: #ff80bf;">⏳ Free Trial: <b>{remaining_sec}s left</b></div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="storage-badge">✅ Saved in Left Sidebar | User: <b>{current_user}</b> ({len(user_messages)} msgs)</div>', unsafe_allow_html=True)
+
+    # DIRECT VISIBLE FILE / PHOTO / AUDIO UPLOAD PANEL
     st.markdown('<div class="visible-box"><b>📤 Direct Media & File Uploader (Photos, Audio, Documents)</b></div>', unsafe_allow_html=True)
     up_c1, up_c2 = st.columns([2, 1])
     with up_c1:
@@ -392,20 +417,6 @@ else:
                     all_histories[current_user] = user_messages
                     save_data(HISTORY_FILE, all_histories)
                 st.rerun()
-
-    # 2. VISIBLE LIVE STORAGE MONITOR
-    with st.expander("💾 VIEW LIVE STORED CHAT HISTORY & APP INSTALL LINK", expanded=False):
-        c_st1, c_st2 = st.columns([1.5, 1.5])
-        with c_st1:
-            st.markdown(f"**Database Files Active On Server:**")
-            st.markdown(f"- User DB: `{USERS_FILE}`")
-            st.markdown(f"- Chat History DB: `{HISTORY_FILE}`")
-            st.markdown(f"- Current Saved Messages: `{len(user_messages)}`")
-            chat_json_str = json.dumps(user_messages, indent=2)
-            st.download_button("📥 Download/Export Chat History (.JSON)", data=chat_json_str, file_name=f"{current_user}_chat.json", mime="application/json", use_container_width=True)
-        with c_st2:
-            st.markdown("**📲 Install as Mobile Application (Direct Link / Shortcut):**")
-            st.info("Mobile Chrome nalli open maadi: Top Right **3 dots (⋮)** click maadi **'Install app'** athava **'Add to Home screen'** select maadi. Home screen nalli app icon create aaguththe.")
 
     # DAILY NOTIFICATION BANNER
     st.markdown(f"""
@@ -446,117 +457,124 @@ else:
                 st.image(msg["image_url"], caption="Generated Illustration")
             st.markdown(msg["content"])
 
-    # 3. DIRECT FUNCTIONING MIC WITH REACT STATE HOOK
+    # ================= 100% WORKING DIRECT MIC COMPONENT =================
     mic_html = """
-    <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 8px 0 5px 0;">
-        <button id="micBtn" style="
+    <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 10px 0;">
+        <button id="micBtn" type="button" style="
             background: linear-gradient(45deg, #00f2fe, #ff007f);
-            border: none;
+            border: 2px solid #ffffff;
             color: #ffffff;
-            padding: 10px 24px;
-            border-radius: 24px;
+            padding: 12px 28px;
+            border-radius: 26px;
             font-weight: 800;
-            font-size: 14px;
+            font-size: 15px;
             cursor: pointer;
-            box-shadow: 0 0 20px rgba(0, 242, 254, 0.55);
+            box-shadow: 0 0 22px rgba(0, 242, 254, 0.6);
             letter-spacing: 1px;
             outline: none;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         ">🎙️ TOUCH TO SPEAK</button>
-        <span id="status" style="color: #00ffcc; font-size: 13px; font-weight: 700;">Click mic & speak English</span>
+        <span id="micStatus" style="color: #00ffcc; font-size: 13px; font-weight: 700;">Tap button & speak clearly</span>
     </div>
 
     <script>
-        const micBtn = document.getElementById('micBtn');
-        const status = document.getElementById('status');
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const btn = document.getElementById('micBtn');
+        const status = document.getElementById('micStatus');
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        if (!SpeechRecognition) {
-            status.innerText = "Speech Recognition requires Google Chrome.";
+        if (!SpeechRec) {
+            status.innerText = "Please open in Google Chrome on PC/Mobile.";
         } else {
-            const recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.lang = 'en-US';
+            const rec = new SpeechRec();
+            rec.continuous = false;
+            rec.interimResults = false;
+            rec.lang = 'en-US';
 
-            let isListening = false;
+            let listening = false;
 
-            micBtn.onclick = async () => {
-                if (isListening) {
-                    recognition.stop();
+            btn.onclick = async () => {
+                if (listening) {
+                    rec.stop();
                     return;
                 }
-
                 try {
+                    // Force browser to prompt microphone permission
                     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                        await navigator.mediaDevices.getUserMedia({ audio: true });
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        stream.getTracks().forEach(track => track.stop());
                     }
-                    recognition.start();
-                    isListening = true;
-                    status.innerText = "🔴 Listening... Speak clearly now";
-                    micBtn.style.background = "#ff0055";
-                    micBtn.innerText = "🛑 STOP LISTENING";
-                } catch(e) {
-                    status.innerText = "Mic blocked. Allow Microphone in Chrome Site Settings!";
-                    resetMic();
+                    rec.start();
+                    listening = true;
+                    status.innerText = "🔴 Listening... Speak now!";
+                    btn.style.background = "#ff0055";
+                    btn.innerText = "🛑 STOP LISTENING";
+                } catch (err) {
+                    status.innerText = "Permission Denied! Click lock icon in browser URL to Allow Mic.";
+                    resetUi();
                 }
             };
 
-            recognition.onresult = (event) => {
-                const text = event.results[0][0].transcript;
-                status.innerText = "Heard: " + text;
+            rec.onresult = (e) => {
+                const transcript = e.results[0][0].transcript;
+                status.innerText = "Heard: " + transcript;
 
+                // Find textarea in parent streamlit window
                 const parentDoc = window.parent.document;
                 const textarea = parentDoc.querySelector('textarea[aria-label="Ask Zeno or type \'image: car\' to generate..."]') ||
                                  parentDoc.querySelector('textarea[data-testid="stChatInputTextArea"]');
 
                 if (textarea) {
-                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
-                    nativeSetter.call(textarea, text);
+                    const proto = window.HTMLTextAreaElement.prototype;
+                    const nativeSet = Object.getOwnPropertyDescriptor(proto, "value").set;
+                    nativeSet.call(textarea, transcript);
                     textarea.dispatchEvent(new Event('input', { bubbles: true }));
 
                     setTimeout(() => {
-                        const sendBtn = parentDoc.querySelector('button[data-testid="stChatInputSubmitButton"]') ||
-                                        parentDoc.querySelector('button[kind="secondaryFormSubmit"]');
-                        if (sendBtn) {
-                            sendBtn.click();
+                        const submitBtn = parentDoc.querySelector('button[data-testid="stChatInputSubmitButton"]') ||
+                                          parentDoc.querySelector('button[kind="secondaryFormSubmit"]');
+                        if (submitBtn) {
+                            submitBtn.click();
                         } else {
-                            const enterEvent = new KeyboardEvent('keydown', {
+                            const enterEvt = new KeyboardEvent('keydown', {
                                 bubbles: true,
                                 cancelable: true,
                                 key: 'Enter',
                                 code: 'Enter',
                                 keyCode: 13
                             });
-                            textarea.dispatchEvent(enterEvent);
+                            textarea.dispatchEvent(enterEvt);
                         }
                     }, 400);
                 }
-                resetMic();
+                resetUi();
             };
 
-            recognition.onerror = (e) => {
-                status.innerText = "Mic Error. Tap again to retry.";
-                resetMic();
+            rec.onerror = (e) => {
+                if (e.error === 'not-allowed') {
+                    status.innerText = "Microphone blocked. Allow it in site settings!";
+                } else {
+                    status.innerText = "Try tapping again.";
+                }
+                resetUi();
             };
 
-            recognition.onend = () => {
-                resetMic();
+            rec.onend = () => {
+                resetUi();
             };
 
-            function resetMic() {
-                isListening = false;
-                micBtn.style.background = "linear-gradient(45deg, #00f2fe, #ff007f)";
-                micBtn.innerText = "🎙️ TOUCH TO SPEAK";
+            function resetUi() {
+                listening = false;
+                btn.style.background = "linear-gradient(45deg, #00f2fe, #ff007f)";
+                btn.innerText = "🎙️ TOUCH TO SPEAK";
             }
         }
     </script>
     """
-    st.components.v1.html(mic_html, height=52)
+    st.components.v1.html(mic_html, height=58)
 
-    # CHAT INPUT
+    # CHAT INPUT BOX
     user_prompt = st.chat_input("Ask Zeno or type 'image: car' to generate...")
 
     if user_prompt:
