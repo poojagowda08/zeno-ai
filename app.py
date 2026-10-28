@@ -24,6 +24,7 @@ st.markdown("""
         font-family: 'Rajdhani', sans-serif;
     }
 
+    /* Cinematic Welcome Card */
     .enter-card {
         background: rgba(10, 16, 38, 0.85);
         border: 2px solid rgba(0, 242, 254, 0.45);
@@ -66,6 +67,7 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
+    /* Glowing Pulsing Core */
     .orb-wrapper {
         display: flex;
         justify-content: center;
@@ -102,7 +104,7 @@ if "messages" not in st.session_state:
         {"role": "assistant", "content": "Zeno core systems active. Ask me anything!"}
     ]
 
-# ----------------- GROQ API HELPER FUNCTION -----------------
+# ----------------- GROQ API FUNCTION WITH CLOUDFLARE BYPASS HEADERS -----------------
 groq_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
 
 def call_groq_api(prompt, api_token):
@@ -111,7 +113,9 @@ def call_groq_api(prompt, api_token):
     
     headers = {
         "Authorization": f"Bearer {clean_token}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
     
     payload = {
@@ -119,7 +123,7 @@ def call_groq_api(prompt, api_token):
         "messages": [
             {
                 "role": "system",
-                "content": "You are Zeno, a hyper-intelligent, friendly voice assistant. Keep answers brief, natural and conversational (1 to 2 short sentences). Do not use markdown like asterisks or hashes."
+                "content": "You are Zeno, a hyper-intelligent, friendly voice assistant. Keep answers brief, natural and conversational (1 to 2 short sentences). Never use markdown like asterisks or hashes."
             },
             {
                 "role": "user",
