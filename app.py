@@ -288,7 +288,7 @@ else:
 
                     # Stable 1.5-flash for no quota & no 503 limits
                     response = client.models.generate_content(
-                        model="gemini-1.5-flash",
+                        model="gemini-3.8-flash",
                         contents=payload,
                         config=types.GenerateContentConfig(
                             system_instruction=SYSTEM_INSTRUCTION,
