@@ -102,12 +102,6 @@ section[data-testid="stSidebar"] {
 }
 </style>""", unsafe_allow_html=True)
 
-=====================================================
-
-SESSION STATE
-
-=====================================================
-
 if "app_entered" not in st.session_state:
 st.session_state.app_entered = False
 
@@ -118,12 +112,6 @@ st.session_state.messages = [
 "content": "Hello! I am ZENO AI. Your assistant is ready. How can I help you?"
 }
 ]
-
-=====================================================
-
-API KEY
-
-=====================================================
 
 def get_groq_key():
 # First check Streamlit secrets.
@@ -138,12 +126,6 @@ pass
 return os.environ.get("GROQ_API_KEY", "").strip()
 
 groq_key = get_groq_key()
-
-=====================================================
-
-GROQ API FUNCTION
-
-=====================================================
 
 def call_groq_api(prompt, api_token, history=None):
 url = "https://api.groq.com/openai/v1/chat/completions"
@@ -238,13 +220,6 @@ except (KeyError, IndexError, json.JSONDecodeError) as error:
     raise RuntimeError(
         f"Unexpected API response: {error}"
     ) from error
-
-=====================================================
-
-BROWSER VOICE OUTPUT
-
-=====================================================
-
 def speak_text(text):
 # JSON encoding safely escapes quotes and special characters.
 safe_text = json.dumps(text[:1000], ensure_ascii=True)
@@ -277,14 +252,7 @@ if ("speechSynthesis" in window) {
 </script>
 """.replace("MESSAGE_PLACEHOLDER", safe_text)
 
-st.components.v1.html(speech_html, height=0)
-
-=====================================================
-
-WELCOME SCREEN
-
-=====================================================
-
+st.components.v1.html(speech_html, height=0
 if not st.session_state.app_entered:
 
 st.markdown("""
@@ -319,12 +287,6 @@ with center:
         st.session_state.app_entered = True
         st.rerun()
 
-=====================================================
-
-MAIN DASHBOARD
-
-=====================================================
-
 else:
 
 st.markdown(
@@ -339,11 +301,6 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
-
-# -------------------------------------------------
-# SIDEBAR
-# -------------------------------------------------
-
 with st.sidebar:
 
     st.markdown("## 🎛️ Navigation & Tools")
