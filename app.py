@@ -140,7 +140,6 @@ if not st.session_state.app_entered:
 
 # ----------------- SCREEN 2: MAIN DASHBOARD -----------------
 else:
-    # Header
     st.markdown('<div class="zeno-brand" style="text-align: center; font-size: 2.1rem; margin-top: -15px;">⚡ ZENO AI CORE ⚡</div>', unsafe_allow_html=True)
     st.markdown('<div class="orb-wrapper"><div class="core-orb" style="width: 70px; height: 70px;"></div></div>', unsafe_allow_html=True)
 
@@ -172,7 +171,7 @@ else:
         if uploaded_audio:
             st.audio(uploaded_audio)
 
-    # ----------------- DIRECT SPEECH MIC COMPONENT -----------------
+    # Mic Component
     st.components.v1.html("""
     <div style="text-align: center; margin: 10px 0 15px 0;">
         <button id="micBtn" style="
@@ -224,7 +223,6 @@ else:
                 const text = event.results[0][0].transcript;
                 status.innerText = "Heard: " + text;
 
-                // Send voice result into Streamlit chat input automatically
                 const doc = window.parent.document;
                 const textarea = doc.querySelector('textarea[aria-label="Ask Zeno anything..."]');
                 if (textarea) {
@@ -241,7 +239,7 @@ else:
             };
 
             recognition.onerror = (e) => {
-                status.innerText = "Mic Error: " + (e.error || "Tap again and allow permission");
+                status.innerText = "Mic Error. Tap again and allow permission";
                 resetBtn();
             };
 
@@ -255,18 +253,18 @@ else:
                 micBtn.innerText = "🎙️ TOUCH TO SPEAK";
             }
         } else {
-            status.innerText = "Voice Recognition requires Chrome or Edge browser.";
+            status.innerText = "Voice Recognition requires Chrome browser.";
         }
     </script>
     """, height=90)
 
-    # Chat messages display
+    # Chat Messages
     for msg in st.session_state.messages:
         avatar = "🔮" if msg["role"] == "assistant" else "👤"
         with st.chat_message(msg["role"], avatar=avatar):
             st.markdown(msg["content"])
 
-    # Chat input & AI generation
+    # Chat Input
     user_prompt = st.chat_input("Ask Zeno anything...")
 
     if user_prompt:
@@ -278,29 +276,37 @@ else:
             if not client:
                 st.error("API Key configure aagilla. Streamlit Secrets nalli GEMINI_API_KEY check maadi.")
             else:
-                try:
-                    payload = []
-                    if pdf_extracted_text:
-                        payload.append(f"Context from PDF:\n{pdf_extracted_text[:4000]}\n")
-                    if uploaded_image:
-                        payload.append(Image.open(uploaded_image))
-                    payload.append(user_prompt)
+                payload = []
+                if pdf_extracted_text:
+                    payload.append(f"Context from PDF:\n{pdf_extracted_text[:4000]}\n")
+                if uploaded_image:
+                    payload.append(Image.open(uploaded_image))
+                payload.append(user_prompt)
 
-                    # Stable 1.5-flash for no quota & no 503 limits
-                    response = client.models.generate_content(
-                        model="gemini-3.8-flash",
-                        contents=payload,
-                        config=types.GenerateContentConfig(
-                            system_instruction=SYSTEM_INSTRUCTION,
-                            temperature=0.6,
+                # 503 Server Rush ತಪ್ಪಿಸಲು ಆಟೋಮ್ಯಾಟಿಕ್ ಬ್ಯಾಕಪ್ ಮಾಡೆಲ್‌ಗಳು
+                candidate_models = ["gemini-1.5-flash-8b", "gemini-1.5-flash", "gemini-2.5-flash"]
+                response = None
+
+                for target_model in candidate_models:
+                    try:
+                        response = client.models.generate_content(
+                            model=target_model,
+                            contents=payload,
+                            config=types.GenerateContentConfig(
+                                system_instruction=SYSTEM_INSTRUCTION,
+                                temperature=0.6,
+                            )
                         )
-                    )
+                        if response and response.text:
+                            break
+                    except Exception:
+                        continue
 
+                if response and response.text:
                     clean_reply = response.text.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
                     st.markdown(clean_reply)
                     st.session_state.messages.append({"role": "assistant", "content": clean_reply})
 
-                    # Auto voice synthesizer
                     tts_script = f"""
                     <script>
                         if ('speechSynthesis' in window) {{
@@ -323,6 +329,5 @@ else:
                     </script>
                     """
                     st.components.v1.html(tts_script, height=0)
-
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
+                else:
+                    st.error("Google Server High Demand. Please try again in a few seconds.")
