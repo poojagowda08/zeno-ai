@@ -7,17 +7,16 @@ import urllib.request
 import urllib.parse
 import urllib.error
 from datetime import date
-from PIL import Image
 
 # ----------------- PAGE CONFIG -----------------
 st.set_page_config(
-    page_title="ZENO AI",
+    page_title="ZENO AI | Next-Gen Intelligence",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ----------------- DATABASE / PERSISTENCE -----------------
+# ----------------- PERSISTENCE -----------------
 USERS_FILE = "users_db.json"
 HISTORY_FILE = "chat_history_data.json"
 
@@ -37,7 +36,6 @@ def save_data(filename, data):
     except Exception:
         pass
 
-# ----------------- PASSWORD STRENGTH CHECK -----------------
 def is_strong_password(password):
     if len(password) < 8:
         return False, "Password minimum 8 characters erbeku."
@@ -47,95 +45,191 @@ def is_strong_password(password):
         return False, "Password nalli ondhu special symbol erbeku."
     return True, "Strong Password!"
 
-# ----------------- PERPLEXITY STYLE MINIMAL CLEAN CSS -----------------
+# ----------------- ADVANCED 3D NEON STYLING -----------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
 
     .stApp {
-        background-color: #0b0f17;
-        color: #e2e8f0;
-        font-family: 'Inter', sans-serif;
+        background: radial-gradient(circle at 50% 0%, #0d1238 0%, #060919 60%, #020308 100%);
+        color: #e0f7fa;
+        font-family: 'Rajdhani', sans-serif;
     }
 
     [data-testid="stSidebar"] {
-        background-color: #080c14 !important;
-        border-right: 1px solid #1e293b !important;
+        background: linear-gradient(180deg, #090e24 0%, #030612 100%) !important;
+        border-right: 2px solid rgba(0, 242, 254, 0.4) !important;
+        box-shadow: 10px 0 35px rgba(0, 242, 254, 0.15);
     }
 
-    .zeno-title {
-        font-family: 'Orbitron', sans-serif;
-        font-size: 2.2rem;
-        font-weight: 900;
-        letter-spacing: 1.5px;
-        background: linear-gradient(90deg, #00f2fe 0%, #4facfe 50%, #00ffcc 100%);
+    /* 3D Floating Hero Logo */
+    .hero-logo-box {
+        text-align: center;
+        padding: 25px 10px 10px 10px;
+    }
+
+    .hero-3d-logo {
+        display: inline-block;
+        font-size: 4rem;
+        background: linear-gradient(135deg, #00f2fe 0%, #9b51e0 50%, #ff007f 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-align: center;
-        margin-top: 10px;
-        margin-bottom: 4px;
+        filter: drop-shadow(0 10px 20px rgba(0, 242, 254, 0.6));
+        animation: floatLogo 3s ease-in-out infinite;
     }
 
-    .zeno-subtitle {
-        text-align: center;
-        color: #94a3b8;
-        font-size: 0.95rem;
-        margin-bottom: 25px;
+    @keyframes floatLogo {
+        0%, 100% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(-8px) scale(1.05); }
     }
 
-    .perplexity-card {
-        background: #111827;
-        border: 1px solid #1f293d;
-        border-radius: 14px;
-        padding: 16px 20px;
-        margin-bottom: 14px;
+    .hero-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 2.8rem;
+        font-weight: 900;
+        letter-spacing: 3px;
+        background: linear-gradient(90deg, #00f2fe 0%, #00ffcc 50%, #ff007f 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 30px rgba(0, 242, 254, 0.5);
+        margin: 5px 0;
     }
 
-    .quick-link {
-        display: inline-block;
-        background: #1e293b;
-        color: #38bdf8 !important;
-        padding: 6px 14px;
+    /* 3D Interactive Feature Cards */
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 18px;
+        margin: 25px 0;
+    }
+
+    .card-3d {
+        background: linear-gradient(145deg, rgba(16, 24, 60, 0.85), rgba(7, 12, 35, 0.95));
+        border: 1.5px solid rgba(0, 242, 254, 0.35);
         border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 500;
+        padding: 22px 18px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .card-3d:hover {
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 0 15px 35px rgba(0, 242, 254, 0.35);
+        border-color: #00ffcc;
+    }
+
+    .card-icon {
+        font-size: 2rem;
+        margin-bottom: 8px;
+    }
+
+    .card-heading {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #00ffcc;
+        margin-bottom: 6px;
+    }
+
+    .card-desc {
+        color: #b0bec5;
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    /* 3D Pushable Buttons */
+    div.stButton > button {
+        background: linear-gradient(135deg, #00f2fe 0%, #0072ff 100%) !important;
+        color: #03081a !important;
+        font-family: 'Orbitron', sans-serif !important;
+        font-weight: 800 !important;
+        border: none !important;
+        border-radius: 14px !important;
+        padding: 10px 22px !important;
+        box-shadow: 0 6px 0 #0050aa, 0 12px 25px rgba(0, 242, 254, 0.4) !important;
+        transition: all 0.15s ease !important;
+    }
+    div.stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 0 #0050aa, 0 16px 30px rgba(0, 255, 204, 0.6) !important;
+    }
+    div.stButton > button:active {
+        transform: translateY(4px) !important;
+        box-shadow: 0 2px 0 #0050aa, 0 6px 15px rgba(0, 242, 254, 0.4) !important;
+    }
+
+    /* 3D App Shortcut Chips */
+    .chip-3d {
+        display: inline-block;
+        background: linear-gradient(145deg, #101c48, #0a1030);
+        border: 1px solid #00f2fe;
+        color: #ffffff !important;
         text-decoration: none;
-        margin: 3px;
-        border: 1px solid #334155;
+        padding: 9px 18px;
+        border-radius: 16px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin: 5px;
+        box-shadow: 0 5px 0 #04081c, 0 8px 18px rgba(0, 242, 254, 0.25);
         transition: all 0.2s ease;
     }
-    .quick-link:hover {
-        background: #0284c7;
-        color: #ffffff !important;
-        border-color: #38bdf8;
+    .chip-3d:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 0 #04081c, 0 14px 26px rgba(0, 255, 204, 0.5);
+        color: #00ffcc !important;
     }
 
-    .speaker-btn {
-        background: #1e293b;
-        color: #38bdf8;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 4px 10px;
-        font-size: 12px;
-        font-weight: 600;
+    /* Audio Speaker Button */
+    .speaker-btn-3d {
+        background: linear-gradient(135deg, #00ffcc, #0072ff);
+        border: none;
+        color: #03081a;
+        font-weight: 800;
+        padding: 6px 14px;
+        border-radius: 12px;
         cursor: pointer;
+        font-size: 13px;
+        box-shadow: 0 3px 0 #004ba0, 0 6px 15px rgba(0, 255, 204, 0.3);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SESSION STATE & LOGIN -----------------
+# ----------------- SESSION STATE & 2-DAY RULE -----------------
 query_user = st.query_params.get("user", "")
 
 if "logged_in_user" not in st.session_state:
     st.session_state.logged_in_user = query_user if query_user else None
 
-if "guest_start_time" not in st.session_state:
-    st.session_state.guest_start_time = time.time()
+if "guest_install_time" not in st.session_state:
+    st.session_state.guest_install_time = time.time()
+
+if "current_view" not in st.session_state:
+    st.session_state.current_view = "home"  # 'home' or 'chat'
+
+if "welcome_shown" not in st.session_state:
+    st.session_state.welcome_shown = False
 
 if "guest_messages" not in st.session_state:
     st.session_state.guest_messages = [
-        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything, or upload any file/camera snap from the left sidebar to get instant automatic explanation."}
+        {"role": "assistant", "content": "Welcome to Zeno AI. Ask any question in Kannada or English, upload PDFs from sidebar, or generate images!"}
     ]
+
+# Welcome Toast Notification (Only once per session)
+if not st.session_state.welcome_shown:
+    st.session_state.welcome_shown = True
+    st.toast("⚡ Welcome to ZENO AI! Your 2-Day Free Explorer Trial is Active.", icon="✨")
+
+# ----------------- 2-DAY (48-HOUR) TRIAL RULE -----------------
+TWO_DAYS_IN_SECONDS = 2 * 24 * 60 * 60  # 172,800 seconds
+is_logged_in = st.session_state.logged_in_user is not None
+
+if not is_logged_in:
+    elapsed_seconds = int(time.time() - st.session_state.guest_install_time)
+    trial_expired = (elapsed_seconds >= TWO_DAYS_IN_SECONDS)
+    remaining_seconds = max(0, TWO_DAYS_IN_SECONDS - elapsed_seconds)
+    hours_left = int(remaining_seconds // 3600)
+    mins_left = int((remaining_seconds % 3600) // 60)
+else:
+    trial_expired = False
 
 # ----------------- GROQ API CALLER -----------------
 raw_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
@@ -146,12 +240,12 @@ def call_groq_api_robust(prompt):
         return "GROQ_API_KEY Missing! Streamlit Secrets nalli GROQ_API_KEY add maadi."
 
     system_instruction = (
-        "You are Zeno AI, a clean, highly accurate, Perplexity-style intelligence engine. "
-        "Language Rules:\n"
-        "1. If user asks in Kannada (or Tanglish), respond strictly in clear Kannada.\n"
-        "2. If user asks in English or any other language, respond strictly in English.\n"
-        "3. Provide direct, factual, structured, and comprehensive answers without unnecessary fillers.\n"
-        "4. When an image, file, or camera snap is uploaded, immediately describe all visual details, what it is, context, meaning, and key points thoroughly without waiting for extra questions."
+        "You are Zeno AI, an ultra-advanced intelligent AI core. "
+        "Strict Language Rules:\n"
+        "1. If the user asks in Kannada (Kannada script or Tanglish/Kannada written in English alphabet), respond strictly in clear Kannada.\n"
+        "2. If the user asks in English or any other language, respond strictly in English.\n"
+        "3. Provide direct, accurate, structured, and insightful answers.\n"
+        "4. If a PDF document is provided or described, thoroughly summarize it, extract key facts, and explain clearly."
     )
 
     last_error = ""
@@ -164,6 +258,7 @@ def call_groq_api_robust(prompt):
             "User-Agent": "Mozilla/5.0"
         }
 
+        # Dynamic model fetch to avoid model_not_found errors
         available_models = []
         try:
             req_models = urllib.request.Request("https://api.groq.com/openai/v1/models", headers=headers, method="GET")
@@ -188,7 +283,7 @@ def call_groq_api_robust(prompt):
                     {"role": "system", "content": system_instruction},
                     {"role": "user", "content": prompt}
                 ],
-                "temperature": 0.2
+                "temperature": 0.3
             }
             body_data = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(chat_url, data=body_data, headers=headers, method="POST")
@@ -207,61 +302,64 @@ def call_groq_api_robust(prompt):
 
     return f"API Issue: {last_error}"
 
-# ----------------- TIME & AUTH CHECK -----------------
-is_logged_in = st.session_state.logged_in_user is not None
-
-if not is_logged_in:
-    elapsed_seconds = int(time.time() - st.session_state.guest_start_time)
-    time_limit_reached = (elapsed_seconds >= 60)
-else:
-    time_limit_reached = False
-
-# ----------------- SIGN IN / SIGN UP (ONE TIME) -----------------
-if not is_logged_in and time_limit_reached:
+# ----------------- SIGN IN / SIGN UP (ONLY AFTER 2 DAYS OF USE) -----------------
+if not is_logged_in and trial_expired:
     st.markdown("""
-    <div class="perplexity-card" style="max-width: 460px; margin: 40px auto; text-align: center;">
-        <div style="color: #38bdf8; font-weight: 700; font-size: 0.9rem; letter-spacing: 1px;">AUTHENTICATION REQUIRED</div>
-        <div class="zeno-title" style="font-size: 1.8rem;">⚡ ZENO AI ⚡</div>
-        <p style="color: #94a3b8; font-size: 0.9rem;">Sign in once to keep your history persistent permanently.</p>
+    <div style="background: rgba(14, 22, 58, 0.95); border: 2px solid #ff007f; border-radius: 24px; padding: 30px 20px; text-align: center; max-width: 520px; margin: 40px auto; box-shadow: 0 15px 40px rgba(255, 0, 127, 0.4);">
+        <div style="font-size: 3rem;">⚡</div>
+        <div style="color: #ff007f; font-family: 'Orbitron'; font-weight: 800; font-size: 1.2rem; letter-spacing: 1px;">2-DAY FREE TRIAL COMPLETED</div>
+        <div class="hero-title" style="font-size: 2rem;">ZENO AI</div>
+        <p style="color: #e0f7fa; font-size: 1rem; margin-top: 6px;">
+            Nimma 2 dinada free trial mugidide. Ondu sala Sign In athava Sign Up maadi, lifelong chat history mathu features permanent aagi unlock aaguththe!
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
-    auth_tab1, auth_tab2 = st.tabs(["Sign In", "Create Account"])
+    auth_tab1, auth_tab2 = st.tabs(["🔑 Sign In", "📝 Create Account (Sign Up)"])
     users_db = load_data(USERS_FILE, {})
 
     with auth_tab1:
+        st.subheader("Sign In Once")
         login_id = st.text_input("Username", key="login_id")
         login_pwd = st.text_input("Password", type="password", key="login_pwd")
-        if st.button("Sign In & Continue", use_container_width=True):
-            user_record = users_db.get(login_id)
-            if user_record and (user_record.get("password") == login_pwd if isinstance(user_record, dict) else user_record == login_pwd):
-                st.session_state.logged_in_user = login_id
-                st.query_params["user"] = login_id
 
-                all_histories = load_data(HISTORY_FILE, {})
-                if login_id not in all_histories:
-                    all_histories[login_id] = st.session_state.guest_messages
+        if st.button("🚀 Sign In & Unlock Forever", use_container_width=True):
+            user_record = users_db.get(login_id)
+            if user_record:
+                saved_pwd = user_record["password"] if isinstance(user_record, dict) else user_record
+                if saved_pwd == login_pwd:
+                    st.session_state.logged_in_user = login_id
+                    st.query_params["user"] = login_id
+
+                    all_histories = load_data(HISTORY_FILE, {})
+                    if login_id not in all_histories:
+                        all_histories[login_id] = st.session_state.guest_messages
+                    else:
+                        all_histories[login_id].extend(st.session_state.guest_messages[1:])
+                    save_data(HISTORY_FILE, all_histories)
+                    st.rerun()
                 else:
-                    all_histories[login_id].extend(st.session_state.guest_messages[1:])
-                save_data(HISTORY_FILE, all_histories)
-                st.rerun()
+                    st.error("Invalid password!")
             else:
-                st.error("Invalid credentials!")
+                st.error("User not found. Please Sign Up.")
 
     with auth_tab2:
+        st.subheader("New User Registration")
+        st.info("Password rules: Minimum 8 characters, at least 1 number, and 1 special symbol (@, #, $, %).")
         new_id = st.text_input("Choose Username", key="reg_id")
         new_pwd = st.text_input("Create Password", type="password", key="reg_pwd")
         new_pwd_confirm = st.text_input("Confirm Password", type="password", key="reg_pwd_confirm")
-        if st.button("Register & Enter", use_container_width=True):
+
+        if st.button("✨ Create Account & Proceed", use_container_width=True):
             is_valid, msg = is_strong_password(new_pwd)
             if not new_id or not new_pwd:
-                st.warning("Please fill all details.")
+                st.warning("Please fill in all details.")
             elif not is_valid:
                 st.error(msg)
             elif new_pwd != new_pwd_confirm:
                 st.error("Passwords do not match!")
             elif new_id in users_db:
-                st.error("Username already registered.")
+                st.error("Username already registered. Please Sign In.")
             else:
                 users_db[new_id] = {"password": new_pwd}
                 save_data(USERS_FILE, users_db)
@@ -273,177 +371,234 @@ if not is_logged_in and time_limit_reached:
                 save_data(HISTORY_FILE, all_histories)
                 st.rerun()
 
-# ----------------- MAIN PERPLEXITY-STYLE DASHBOARD -----------------
+# ----------------- MAIN EXPERIENTIAL INTERFACE -----------------
 else:
     all_histories = load_data(HISTORY_FILE, {})
 
     if not is_logged_in:
         current_user = "Guest"
         user_messages = st.session_state.guest_messages
-        remaining_sec = max(0, 60 - elapsed_seconds)
     else:
         current_user = st.session_state.logged_in_user
         if current_user not in all_histories:
             all_histories[current_user] = [
-                {"role": "assistant", "content": f"Hello {current_user}! Where knowledge begins. Ask anything or upload files from the sidebar for instant explanation."}
+                {"role": "assistant", "content": f"Hello {current_user}! Ask me anything or upload PDF files from sidebar."}
             ]
         user_messages = all_histories[current_user]
 
-    # ================= LEFT SIDEBAR (UPLOAD HUB + CHATS) =================
+    # ================= LEFT SIDEBAR (NAVIGATION + ONLY PDF UPLOAD) =================
     with st.sidebar:
-        st.markdown('<div style="font-family: Orbitron; font-weight: 800; font-size: 1.3rem; color: #38bdf8;">⚡ ZENO AI</div>', unsafe_allow_html=True)
-        st.caption(f"Session: **{current_user}**")
+        st.markdown("""
+        <div style="text-align: center; padding: 10px 0;">
+            <div style="font-size: 2.5rem; text-shadow: 0 0 20px #00f2fe;">⚡</div>
+            <div style="font-family: 'Orbitron'; font-size: 1.3rem; font-weight: 800; color: #00ffcc;">ZENO CORE</div>
+            <div style="font-size: 0.85rem; color: #80deea;">Active User: <b>{}</b></div>
+        </div>
+        """.format(current_user), unsafe_allow_html=True)
 
-        if st.button("➕ New Thread", use_container_width=True):
-            new_welcome = f"Hello {current_user}! What would you like to explore today?"
-            if not is_logged_in:
-                st.session_state.guest_messages = [{"role": "assistant", "content": new_welcome}]
-            else:
-                all_histories[current_user] = [{"role": "assistant", "content": new_welcome}]
-                save_data(HISTORY_FILE, all_histories)
+        # 1. GO TO HOME SCREEN BUTTON
+        if st.button("🏠 Go to Home Screen", use_container_width=True):
+            st.session_state.current_view = "home"
+            st.rerun()
+
+        if st.button("💬 Open AI Chat Hub", use_container_width=True):
+            st.session_state.current_view = "chat"
             st.rerun()
 
         st.markdown("---")
-        st.markdown("### 📎 Media & Upload Hub")
-        st.caption("Upload maadi athava Snap thegiri, Zeno adanne auto explain maaduththe!")
-
-        side_file = st.file_uploader(
-            "Upload Image, Video, PDF, Docs",
-            type=["png", "jpg", "jpeg", "mp4", "mov", "mkv", "mp3", "wav", "pdf", "txt"],
-            key="sidebar_auto_file",
+        # 2. ONLY PDF UPLOAD (Camera Completely Removed)
+        st.markdown("### 📄 PDF Document Hub")
+        st.caption("Upload any PDF document for instant AI breakdown:")
+        pdf_file = st.file_uploader(
+            "Upload PDF",
+            type=["pdf"],
+            key="sidebar_pdf_uploader",
             label_visibility="collapsed"
         )
 
-        with st.popover("📷 Take Camera Snap", use_container_width=True):
-            side_cam = st.camera_input("Snap a photo", key="sidebar_camera_input")
+        if "last_processed_pdf" not in st.session_state:
+            st.session_state.last_processed_pdf = None
 
-        # AUTO-SEND LOGIC FOR UPLOAD / CAMERA (Zero-click automatic explain)
-        if "last_processed_file" not in st.session_state:
-            st.session_state.last_processed_file = None
+        if pdf_file is not None and pdf_file.name != st.session_state.last_processed_pdf:
+            st.session_state.last_processed_pdf = pdf_file.name
+            st.session_state.current_view = "chat"
 
-        current_file_token = None
-        if side_file:
-            current_file_token = f"file_{side_file.name}_{side_file.size}"
-        elif side_cam:
-            current_file_token = f"cam_{side_cam.size}"
+            pdf_msg = f"📄 [Uploaded Document: {pdf_file.name}] Please examine this PDF document in full detail. Extract the main summary, important concepts, actionable takeaways, and explain everything clearly."
+            user_messages.append({"role": "user", "content": pdf_msg})
 
-        if current_file_token and current_file_token != st.session_state.last_processed_file:
-            st.session_state.last_processed_file = current_file_token
-            if side_file:
-                auto_msg = f"📎 [Uploaded File: {side_file.name}] Please thoroughly examine and explain this uploaded file in detail. Describe all contents, meaning, and key takeaways."
-            else:
-                auto_msg = "📷 [Live Camera Snap] Please examine this captured photo and describe everything visible in detail."
+            with st.spinner("⚡ Zeno is reading and analyzing the PDF document..."):
+                pdf_reply = call_groq_api_robust(pdf_msg)
+            user_messages.append({"role": "assistant", "content": pdf_reply})
 
-            user_messages.append({"role": "user", "content": auto_msg})
-            with st.spinner("Zeno is analyzing visual data..."):
-                auto_reply = call_groq_api_robust(auto_msg)
-            user_messages.append({"role": "assistant", "content": auto_reply})
             if is_logged_in:
                 all_histories[current_user] = user_messages
                 save_data(HISTORY_FILE, all_histories)
             st.rerun()
 
         st.markdown("---")
-        st.markdown("### 💬 History")
+        # 3. SAVED CHAT SESSIONS
+        st.markdown("### 📁 Saved Conversations")
         user_queries = [m["content"] for m in user_messages if m["role"] == "user"]
         if not user_queries:
-            st.caption("No history yet.")
+            st.caption("No conversations yet.")
         else:
-            for q in reversed(user_queries[-10:]):
+            for q in reversed(user_queries[-8:]):
                 clean_q = re.sub(r'\[.*?\]', '', q).strip()
-                preview = clean_q[:24] + "..." if len(clean_q) > 24 else clean_q
+                preview = clean_q[:25] + "..." if len(clean_q) > 25 else clean_q
                 st.markdown(f"• {preview}")
 
         st.markdown("---")
-        if is_logged_in:
-            if st.button("Sign Out", use_container_width=True):
+        if not is_logged_in:
+            st.markdown(f'<div style="color: #ff80bf; font-size: 0.82rem; font-weight: bold;">⏳ 2-Day Trial Active: {hours_left}h {mins_left}m left</div>', unsafe_allow_html=True)
+        else:
+            if st.button("🚪 Sign Out", use_container_width=True):
                 st.session_state.logged_in_user = None
                 st.query_params.clear()
-                st.session_state.guest_start_time = time.time()
+                st.session_state.guest_install_time = time.time()
+                st.session_state.current_view = "home"
                 st.rerun()
 
-    # ================= TOP MINIMAL HEADER & APP LAUNCHERS =================
-    st.markdown('<div class="zeno-title">⚡ ZENO AI</div>', unsafe_allow_html=True)
-    st.markdown('<div class="zeno-subtitle">Where knowledge begins · Clean, accurate & fast intelligence</div>', unsafe_allow_html=True)
+    # ================= VIEW 1: UNIQUE 3D SHOWCASE HOME PAGE =================
+    if st.session_state.current_view == "home":
+        # 3D Animated Hero Header
+        st.markdown("""
+        <div class="hero-logo-box">
+            <div class="hero-3d-logo">⚡</div>
+            <div class="hero-title">ZENO AI</div>
+            <div style="font-size: 1.15rem; color: #80deea; font-weight: 600; letter-spacing: 1px;">
+                THE NEXT-GENERATION BILINGUAL INTELLIGENCE ENGINE
+            </div>
+            <p style="color: #94a3b8; max-width: 650px; margin: 10px auto; font-size: 1rem;">
+                Experience lightning-fast knowledge synthesis, PDF deep analysis, instant AI visual generation, and seamless bilingual conversations in Kannada and English.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <div style="text-align: center; margin-bottom: 25px;">
-        <a class="quick-link" href="https://www.google.com" target="_blank">Google</a>
-        <a class="quick-link" href="https://www.youtube.com" target="_blank">YouTube</a>
-        <a class="quick-link" href="https://web.whatsapp.com" target="_blank">WhatsApp</a>
-        <a class="quick-link" href="https://mail.google.com" target="_blank">Gmail</a>
-        <a class="quick-link" href="https://maps.google.com" target="_blank">Maps</a>
-        <a class="quick-link" href="https://github.com" target="_blank">GitHub</a>
-        <a class="quick-link" href="https://www.instagram.com" target="_blank">Instagram</a>
-    </div>
-    """, unsafe_allow_html=True)
+        col_cta1, col_cta2 = st.columns([1, 1])
+        with col_cta1:
+            if st.button("🚀 Launch AI Chat Assistant", use_container_width=True):
+                st.session_state.current_view = "chat"
+                st.rerun()
+        with col_cta2:
+            if st.button("📄 Analyze a PDF Document", use_container_width=True):
+                st.session_state.current_view = "chat"
+                st.info("Sidebar nalli PDF upload maadi, Zeno adanne auto-explain maaduththe!")
 
-    # ================= CHAT DISPLAY =================
-    for msg in user_messages:
-        role_label = "Zeno" if msg["role"] == "assistant" else "You"
-        avatar = "⚡" if msg["role"] == "assistant" else "👤"
+        # 3D Feature Showcase Cards (Enella Maaduththe)
+        st.markdown("""
+        <div class="card-grid">
+            <div class="card-3d">
+                <div class="card-icon">🧠</div>
+                <div class="card-heading">Bilingual Reasoning</div>
+                <div class="card-desc">User Kannada dalli kelidre mathra Kannada dalli uthira baruththe, illavendare standard English nalle flawless answers koduththe.</div>
+            </div>
+            <div class="card-3d">
+                <div class="card-icon">📄</div>
+                <div class="card-heading">PDF Document Deep-Dive</div>
+                <div class="card-desc">Upload notes, textbooks, reports, or research papers. Zeno summarizes, explains, and extracts all key insights instantly.</div>
+            </div>
+            <div class="card-3d">
+                <div class="card-icon">🎨</div>
+                <div class="card-heading">Instant AI Image Engine</div>
+                <div class="card-desc">Just type 'image: your prompt' to create stunning photorealistic visuals, cyberpunk art, and 3D concept graphics in seconds.</div>
+            </div>
+            <div class="card-3d">
+                <div class="card-icon">🔊</div>
+                <div class="card-heading">Neural Speech Synthesizer</div>
+                <div class="card-desc">Every AI response comes with a tactile 3D Read Aloud button for crystal-clear, hands-free audio listening.</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        with st.chat_message(msg["role"], avatar=avatar):
-            if msg.get("image_url"):
-                st.image(msg["image_url"], caption="Generated Visual")
-            st.markdown(msg["content"])
+        # 3D App Launcher Chips
+        st.markdown("""
+        <div style="text-align: center; margin-top: 25px;">
+            <div style="font-family: 'Orbitron'; font-size: 1rem; color: #00ffcc; margin-bottom: 10px;">⚡ QUICK ACCESS PORTALS</div>
+            <a class="chip-3d" href="https://www.google.com" target="_blank">🔍 Google</a>
+            <a class="chip-3d" href="https://www.youtube.com" target="_blank">📺 YouTube</a>
+            <a class="chip-3d" href="https://web.whatsapp.com" target="_blank">💬 WhatsApp</a>
+            <a class="chip-3d" href="https://mail.google.com" target="_blank">✉️ Gmail</a>
+            <a class="chip-3d" href="https://maps.google.com" target="_blank">🗺️ Maps</a>
+            <a class="chip-3d" href="https://github.com" target="_blank">🐙 GitHub</a>
+            <a class="chip-3d" href="https://www.instagram.com" target="_blank">📸 Instagram</a>
+        </div>
+        """, unsafe_allow_html=True)
 
-            if msg["role"] == "assistant" and len(msg["content"].strip()) > 0:
-                clean_speech = re.sub(r'[*#_`]', '', msg["content"][:280]).replace('"', '').replace("'", "").replace('\n', ' ')
-                encoded_speech = urllib.parse.quote(clean_speech)
-                tts_ui = f"""
-                <div style="margin-top: 5px;">
-                    <button class="speaker-btn" onclick="speakText('{encoded_speech}')">🔊 Read</button>
-                    <button class="speaker-btn" style="color: #f43f5e;" onclick="window.speechSynthesis.cancel()">⏹ Stop</button>
-                </div>
-                <script>
-                    function speakText(enc) {{
-                        if ('speechSynthesis' in window) {{
-                            window.speechSynthesis.cancel();
-                            const txt = decodeURIComponent(enc);
-                            const u = new SpeechSynthesisUtterance(txt);
-                            window.speechSynthesis.speak(u);
+    # ================= VIEW 2: FULL 3D INTERACTIVE CHAT HUB =================
+    else:
+        # Top Chat Header
+        chat_head_c1, chat_head_c2 = st.columns([3, 1])
+        with chat_head_c1:
+            st.markdown('<div class="hero-title" style="font-size: 1.8rem; margin: 0;">⚡ ZENO AI CHAT HUB</div>', unsafe_allow_html=True)
+            st.caption("Ask questions, generate images ('image: prompt'), or read aloud answers.")
+        with chat_head_c2:
+            if st.button("🏠 Home Screen", use_container_width=True):
+                st.session_state.current_view = "home"
+                st.rerun()
+
+        # Display Chat History
+        for msg in user_messages:
+            avatar = "⚡" if msg["role"] == "assistant" else "👤"
+            with st.chat_message(msg["role"], avatar=avatar):
+                if msg.get("image_url"):
+                    st.image(msg["image_url"], caption="Generated Visual")
+                st.markdown(msg["content"])
+
+                # 3D Working Audio Speaker for every assistant response
+                if msg["role"] == "assistant" and len(msg["content"].strip()) > 0:
+                    clean_speech = re.sub(r'[*#_`]', '', msg["content"][:280]).replace('"', '').replace("'", "").replace('\n', ' ')
+                    encoded_speech = urllib.parse.quote(clean_speech)
+                    tts_ui = f"""
+                    <div style="margin-top: 6px; display: flex; gap: 8px;">
+                        <button class="speaker-btn-3d" onclick="speakText('{encoded_speech}')">🔊 Read Aloud</button>
+                        <button class="speaker-btn-3d" style="background: rgba(255, 0, 127, 0.4); color: #fff;" onclick="window.speechSynthesis.cancel()">⏹ Stop</button>
+                    </div>
+                    <script>
+                        function speakText(enc) {{
+                            if ('speechSynthesis' in window) {{
+                                window.speechSynthesis.cancel();
+                                const txt = decodeURIComponent(enc);
+                                const u = new SpeechSynthesisUtterance(txt);
+                                u.rate = 1.0;
+                                window.speechSynthesis.speak(u);
+                            }}
                         }}
-                    }}
-                </script>
-                """
-                st.components.v1.html(tts_ui, height=35)
+                    </script>
+                    """
+                    st.components.v1.html(tts_ui, height=40)
 
-    # ================= BOTTOM PERPLEXITY-STYLE SEARCH INPUT =================
-    user_prompt = st.chat_input("Ask anything, search topics, or type 'image: sunset' to generate...")
+        # 3D Tactile Input & Send System
+        st.markdown('<div style="background: rgba(13, 20, 50, 0.85); border: 1.5px solid #00f2fe; border-radius: 18px; padding: 12px 16px; margin-top: 15px; box-shadow: 0 8px 25px rgba(0, 242, 254, 0.25);">', unsafe_allow_html=True)
+        col_txt, col_send = st.columns([4.2, 0.8])
+        with col_txt:
+            user_input = st.text_input(
+                "Message",
+                placeholder="Ask Zeno in Kannada/English or type 'image: futuristic car'...",
+                key="chat_prompt_input",
+                label_visibility="collapsed"
+            )
+        with col_send:
+            send_clicked = st.button("🚀 Send", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    if user_prompt:
-        user_messages.append({"role": "user", "content": user_prompt})
-        if is_logged_in:
-            all_histories[current_user] = user_messages
-            save_data(HISTORY_FILE, all_histories)
+        if send_clicked and user_input.strip():
+            user_text = user_input.strip()
+            user_messages.append({"role": "user", "content": user_text})
 
-        with st.chat_message("user", avatar="👤"):
-            st.markdown(user_prompt)
-
-        with st.chat_message("assistant", avatar="⚡"):
-            lower_input = user_prompt.lower().strip()
-
-            if lower_input.startswith("image:") or lower_input.startswith("generate image:"):
-                img_desc = user_prompt.split(":", 1)[1].strip()
+            lower_val = user_text.lower()
+            if lower_val.startswith("image:") or lower_val.startswith("generate image:"):
+                img_desc = user_text.split(":", 1)[1].strip()
                 encoded_desc = urllib.parse.quote(img_desc)
                 gen_image_url = f"https://image.pollinations.ai/prompt/{encoded_desc}?width=768&height=768&nologo=true"
 
                 reply_txt = f"Generated visual for: **{img_desc}**"
-                st.image(gen_image_url, caption=f"Prompt: {img_desc}")
-                st.markdown(reply_txt)
-
                 user_messages.append({"role": "assistant", "content": reply_txt, "image_url": gen_image_url})
-                if is_logged_in:
-                    all_histories[current_user] = user_messages
-                    save_data(HISTORY_FILE, all_histories)
             else:
-                with st.spinner("Searching and synthesizing..."):
-                    raw_reply = call_groq_api_robust(user_prompt)
-                st.markdown(raw_reply)
-
+                with st.spinner("⚡ Zeno is thinking..."):
+                    raw_reply = call_groq_api_robust(user_text)
                 user_messages.append({"role": "assistant", "content": raw_reply})
-                if is_logged_in:
-                    all_histories[current_user] = user_messages
-                    save_data(HISTORY_FILE, all_histories)
+
+            if is_logged_in:
+                all_histories[current_user] = user_messages
+                save_data(HISTORY_FILE, all_histories)
             st.rerun()
