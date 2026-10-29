@@ -11,7 +11,7 @@ from PIL import Image
 
 # ----------------- PAGE CONFIG -----------------
 st.set_page_config(
-    page_title="ZENO AI | Smart Super Assistant",
+    page_title="ZENO AI | Next-Gen Smart Assistant",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -40,103 +40,109 @@ def save_data(filename, data):
 # ----------------- PASSWORD STRENGTH CHECK -----------------
 def is_strong_password(password):
     if len(password) < 8:
-        return False, "Password minimum 8 characters erbeku."
+        return False, "Password must be at least 8 characters long."
     if not re.search(r"\d", password):
-        return False, "Password nalli ondhu number (0-9) erbeku."
+        return False, "Password must contain at least one number (0-9)."
     if not re.search(r"[@#$%^&*!_\-+=]", password):
-        return False, "Password nalli ondhu special symbol (@, #, $, %, &, *, !) erbeku."
+        return False, "Password must contain at least one special symbol (@, #, $, %, &, *, !)."
     return True, "Strong Password!"
 
-# ----------------- NEON CYBERPUNK STYLING -----------------
+# ----------------- ULTRA-MODERN CYBERPUNK STYLING -----------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
 
     .stApp {
-        background: radial-gradient(circle at 50% 10%, #0d1238 0%, #040614 60%, #010208 100%);
+        background: radial-gradient(circle at 50% 5%, #0d1238 0%, #050816 55%, #010207 100%);
         color: #e0f7fa;
         font-family: 'Rajdhani', sans-serif;
     }
 
     [data-testid="stSidebar"] {
-        background-color: #080c24 !important;
-        border-right: 1.5px solid #00f2fe;
+        background: linear-gradient(180deg, #06091e 0%, #03040a 100%) !important;
+        border-right: 2px solid rgba(0, 242, 254, 0.45) !important;
+        box-shadow: 10px 0 30px rgba(0, 242, 254, 0.1);
     }
 
     .zeno-brand {
         font-family: 'Orbitron', sans-serif;
-        font-size: 2.2rem;
+        font-size: 2.3rem;
         font-weight: 900;
-        letter-spacing: 2px;
-        background: linear-gradient(90deg, #00f2fe 0%, #00ffcc 50%, #ff007f 100%);
+        letter-spacing: 3px;
+        background: linear-gradient(90deg, #00f2fe 0%, #4facfe 30%, #00ffcc 70%, #ff007f 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+        text-shadow: 0 0 25px rgba(0, 242, 254, 0.5);
         margin-bottom: 2px;
     }
 
-    .enter-card {
-        background: rgba(13, 20, 50, 0.9);
-        border: 2px solid #00f2fe;
-        box-shadow: 0 0 35px rgba(0, 242, 254, 0.35);
-        border-radius: 20px;
-        padding: 30px 20px;
-        text-align: center;
-        backdrop-filter: blur(12px);
-        margin: 20px auto;
-        max-width: 550px;
-    }
-
-    .app-box {
-        background: rgba(10, 25, 55, 0.85);
-        border: 1.5px solid #00ffcc;
-        border-radius: 16px;
-        padding: 14px 18px;
-        margin-bottom: 12px;
-        box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
-    }
-
-    .visible-box {
-        background: rgba(15, 23, 58, 0.85);
-        border: 1px solid #00f2fe;
-        border-radius: 14px;
-        padding: 14px;
-        margin-bottom: 12px;
-    }
-
-    .storage-badge {
-        background: rgba(0, 242, 254, 0.12);
-        border: 1px solid #00f2fe;
-        color: #80deea;
-        padding: 5px 12px;
-        border-radius: 12px;
-        font-size: 0.85rem;
-        display: inline-block;
-        margin-bottom: 6px;
+    .glass-card {
+        background: rgba(12, 18, 48, 0.75);
+        border: 1.5px solid rgba(0, 242, 254, 0.35);
+        box-shadow: 0 8px 32px 0 rgba(0, 242, 254, 0.15);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-radius: 18px;
+        padding: 18px 22px;
+        margin-bottom: 16px;
     }
 
     .app-btn {
-        display: inline-block;
-        background: linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(255, 0, 127, 0.2));
-        border: 1px solid #00f2fe;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(255, 0, 127, 0.2));
+        border: 1.5px solid #00f2fe;
         color: #ffffff !important;
         text-decoration: none;
-        padding: 8px 14px;
-        border-radius: 12px;
-        font-size: 0.9rem;
+        padding: 8px 16px;
+        border-radius: 14px;
+        font-size: 0.92rem;
         font-weight: 700;
         margin: 4px;
-        box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 0 14px rgba(0, 242, 254, 0.25);
+        transition: all 0.25s ease-in-out;
     }
     .app-btn:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 20px #00ffcc;
+        transform: translateY(-3px) scale(1.03);
+        box-shadow: 0 0 24px #00ffcc;
+        border-color: #00ffcc;
+    }
+
+    .storage-badge {
+        background: rgba(0, 242, 254, 0.1);
+        border: 1px solid #00f2fe;
+        color: #80deea;
+        padding: 6px 14px;
+        border-radius: 14px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 8px;
+    }
+
+    div[data-testid="stFileUploader"] {
+        background: rgba(8, 14, 38, 0.8);
+        border: 1.5px dashed #00f2fe;
+        border-radius: 14px;
+        padding: 10px;
+    }
+
+    .speaker-btn-ui {
+        background: linear-gradient(135deg, #00ffcc 0%, #0072ff 100%);
+        border: none;
+        color: #040817;
+        font-weight: 800;
+        padding: 6px 14px;
+        border-radius: 16px;
+        cursor: pointer;
+        font-size: 13px;
+        box-shadow: 0 0 12px rgba(0, 255, 204, 0.4);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SESSION STATE & PERSISTENT LOGIN -----------------
+# ----------------- SESSION STATE & LOGIN PERSISTENCE -----------------
 query_user = st.query_params.get("user", "")
 
 if "logged_in_user" not in st.session_state:
@@ -147,26 +153,25 @@ if "guest_start_time" not in st.session_state:
 
 if "guest_messages" not in st.session_state:
     st.session_state.guest_messages = [
-        {"role": "assistant", "content": "Namaskara! Naanu Zeno AI. En prashne kelidru accurate aagi uthira kodtheeni. Photo, video athava files upload maadi explain madalu heli, athava apps open maadi!"}
+        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything in English or Kannada, upload any media for detailed explanation, or tap quick app launchers!"}
     ]
 
-# ----------------- ALL-PURPOSE ACCURATE GROQ CALLER -----------------
+# ----------------- BILINGUAL GROQ CALLER -----------------
 def call_groq_api_robust(prompt):
     raw_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
     if not raw_key:
-        return "GROQ_API_KEY Missing! Streamlit Secrets nalli GROQ_API_KEY add maadi."
+        return "GROQ_API_KEY Missing! Please add GROQ_API_KEY to Streamlit Secrets."
 
     keys_list = [k.strip().replace('"', '').replace("'", "") for k in raw_key.split(",") if k.strip()]
 
     system_instruction = (
-        "You are Zeno AI, an ultra-smart, highly accurate, general-purpose AI assistant. "
-        "You help users with everything: answering questions with high factual accuracy, solving code, explaining uploaded photos/videos/documents, summarizing data, and everyday tasks. "
-        "Rules for responding:\n"
-        "1. Give direct, highly accurate, and helpful answers.\n"
-        "2. If an image, video, audio, or document is provided or described, thoroughly explain its content, key details, and implications.\n"
-        "3. Understand Kannada, English, and Tanglish naturally. Respond clearly based on user preferences.\n"
-        "4. If the user asks for code, provide clean, executable code with brief explanation.\n"
-        "5. Keep responses structured, neat, and engaging."
+        "You are Zeno AI, a next-gen intelligent bilingual companion. "
+        "Rules for answering:\n"
+        "1. For general answers, explain clearly in BOTH English and Kannada (or conversational Kannada in English script) so users grasp the concepts in both languages.\n"
+        "2. Provide accurate, factual, and crisp answers.\n"
+        "3. If media (photos, videos, docs) are uploaded, describe visual elements, summarize content, and list actionable takeaways.\n"
+        "4. If coding is needed, write production-ready code with concise explanations.\n"
+        "5. Keep the formatting clean and visually appealing."
     )
 
     last_error = ""
@@ -232,14 +237,14 @@ if not is_logged_in:
 else:
     time_limit_reached = False
 
-# ----------------- SIGN IN / SIGN UP (GUEST AFTER 1 MIN) -----------------
+# ----------------- SIGN IN / SIGN UP OVERLAY -----------------
 if not is_logged_in and time_limit_reached:
     st.markdown("""
-    <div class="enter-card">
-        <div style="color: #ff007f; font-weight: 800; letter-spacing: 2px;">⚠️ 1-MINUTE TRIAL COMPLETED</div>
+    <div class="glass-card" style="text-align: center; max-width: 520px; margin: 30px auto; border-color: #ff007f;">
+        <div style="color: #ff007f; font-weight: 800; letter-spacing: 2px;">⚠️ 1-MINUTE FREE TRIAL COMPLETED</div>
         <div class="zeno-brand">⚡ ZENO AI ⚡</div>
-        <p style="color: #e0f7fa; font-size: 1.05rem; margin-top: 5px;">
-            Ondu sala <b>Sign In</b> athava <b>Sign Up</b> maadi. Admele yavathoo login kelalla, permanent aagi chat save aagirathe!
+        <p style="color: #e0f7fa; font-size: 1.05rem; margin-top: 6px;">
+            Please <b>Sign In</b> or <b>Create an Account</b> once. Your sessions, media, and chat histories will remain saved permanently!
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -252,7 +257,7 @@ if not is_logged_in and time_limit_reached:
         login_id = st.text_input("Username", key="login_id")
         login_pwd = st.text_input("Password", type="password", key="login_pwd")
         
-        if st.button("🚀 Sign In & Continue Forever", use_container_width=True):
+        if st.button("🚀 Sign In & Continue", use_container_width=True):
             user_record = users_db.get(login_id)
             if user_record:
                 saved_pwd = user_record["password"] if isinstance(user_record, dict) else user_record
@@ -268,27 +273,27 @@ if not is_logged_in and time_limit_reached:
                     save_data(HISTORY_FILE, all_histories)
                     st.rerun()
                 else:
-                    st.error("Invalid Password!")
+                    st.error("Invalid password! Please verify your password.")
             else:
-                st.error("User not found. Sign Up maadi.")
+                st.error("User not found. Please Sign Up.")
 
     with auth_tab2:
         st.subheader("New User Registration")
-        st.info("Password rule: Minimum 8 characters, 1 number, mathu 1 special symbol (@, #, $, %).")
+        st.info("Password rules: Minimum 8 characters, at least 1 number, and 1 special symbol (@, #, $, %).")
         new_id = st.text_input("Choose Username", key="reg_id")
         new_pwd = st.text_input("Create Password", type="password", key="reg_pwd")
         new_pwd_confirm = st.text_input("Confirm Password", type="password", key="reg_pwd_confirm")
 
-        if st.button("✨ Create Account & Enter", use_container_width=True):
+        if st.button("✨ Create Account & Proceed", use_container_width=True):
             is_valid, msg = is_strong_password(new_pwd)
             if not new_id or not new_pwd:
-                st.warning("Ella details fill maadi.")
+                st.warning("Please fill in all details.")
             elif not is_valid:
                 st.error(msg)
             elif new_pwd != new_pwd_confirm:
-                st.error("Passwords match aagthilla!")
+                st.error("Passwords do not match!")
             elif new_id in users_db:
-                st.error("Username already registered ide. Sign In maadi.")
+                st.error("Username already registered. Please Sign In.")
             else:
                 users_db[new_id] = {"password": new_pwd}
                 save_data(USERS_FILE, users_db)
@@ -300,7 +305,7 @@ if not is_logged_in and time_limit_reached:
                 save_data(HISTORY_FILE, all_histories)
                 st.rerun()
 
-# ----------------- MAIN SMART DASHBOARD -----------------
+# ----------------- MAIN APP DASHBOARD -----------------
 else:
     all_histories = load_data(HISTORY_FILE, {})
 
@@ -312,17 +317,17 @@ else:
         current_user = st.session_state.logged_in_user
         if current_user not in all_histories:
             all_histories[current_user] = [
-                {"role": "assistant", "content": f"Hello {current_user}! En prashne idru keli, accurate uthira kodo engine ready ide."}
+                {"role": "assistant", "content": f"Hello {current_user}! Ask me any question in English or Kannada. I am ready to assist."}
             ]
         user_messages = all_histories[current_user]
 
-    # ================= LEFT SIDEBAR (SAVED CHAT HISTORY) =================
+    # ================= LEFT SIDEBAR (SAVED HISTORY) =================
     with st.sidebar:
-        st.markdown('<div class="zeno-brand" style="font-size: 1.5rem;">📁 CHAT HISTORY</div>', unsafe_allow_html=True)
-        st.caption(f"User: **{current_user}**")
+        st.markdown('<div class="zeno-brand" style="font-size: 1.5rem;">📁 CHAT SESSIONS</div>', unsafe_allow_html=True)
+        st.caption(f"Logged User: **{current_user}**")
 
         if st.button("➕ New Chat Session", use_container_width=True):
-            new_welcome = f"Hello {current_user}! Fresh conversation started. En kelbeku iga?"
+            new_welcome = f"Hello {current_user}! Fresh session created. What would you like to ask or explore?"
             if not is_logged_in:
                 st.session_state.guest_messages = [{"role": "assistant", "content": new_welcome}]
             else:
@@ -331,7 +336,7 @@ else:
             st.rerun()
 
         st.markdown("---")
-        st.markdown("### 💬 Saved Conversations")
+        st.markdown("### 💬 Saved Messages")
         
         user_queries = [m["content"] for m in user_messages if m["role"] == "user"]
         if not user_queries:
@@ -352,35 +357,35 @@ else:
                 st.session_state.guest_start_time = time.time()
                 st.rerun()
 
-    # ================= MAIN CONTENT HEADER =================
+    # ================= TOP HEADER =================
     head_col1, head_col2 = st.columns([3, 1])
     with head_col1:
         st.markdown('<div class="zeno-brand">⚡ ZENO AI | SMART ASSISTANT ⚡</div>', unsafe_allow_html=True)
         if not is_logged_in:
-            st.markdown(f'<div class="storage-badge" style="border-color: #ff007f; color: #ff80bf;">⏳ Free Trial: <b>{remaining_sec}s left</b></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="storage-badge" style="border-color: #ff007f; color: #ff80bf;">⏳ Free Trial: <b>{remaining_sec}s remaining</b></div>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div class="storage-badge">✅ Permanent Login: <b>{current_user}</b> | Left Sidebar History Active ({len(user_messages)} msgs)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="storage-badge">✅ Connected: <b>{current_user}</b> | Cloud Persistent History Active ({len(user_messages)} msgs)</div>', unsafe_allow_html=True)
 
-    # ================= 1. DIRECT APP LAUNCHERS (ONE-TAP SHORTCUTS) =================
+    # ================= 1. DIRECT APP LAUNCHERS =================
     st.markdown("""
-    <div class="app-box">
+    <div class="glass-card" style="border-color: #00ffcc;">
         <div style="color: #00ffcc; font-family: 'Orbitron'; font-size: 1.05rem; font-weight: bold; margin-bottom: 8px;">
-            🚀 Quick App Launcher Shortcuts
+            🚀 Quick App Launchers
         </div>
         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            <a class="app-btn" href="https://www.google.com" target="_blank">🔍 Google Search</a>
+            <a class="app-btn" href="https://www.google.com" target="_blank">🔍 Google</a>
             <a class="app-btn" href="https://www.youtube.com" target="_blank">📺 YouTube</a>
             <a class="app-btn" href="https://web.whatsapp.com" target="_blank">💬 WhatsApp</a>
             <a class="app-btn" href="https://mail.google.com" target="_blank">✉️ Gmail</a>
-            <a class="app-btn" href="https://maps.google.com" target="_blank">🗺️ Google Maps</a>
+            <a class="app-btn" href="https://maps.google.com" target="_blank">🗺️ Maps</a>
             <a class="app-btn" href="https://github.com" target="_blank">🐙 GitHub</a>
             <a class="app-btn" href="https://www.instagram.com" target="_blank">📸 Instagram</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ================= 2. DIRECT MULTI-MEDIA EXPLANATION PANEL =================
-    st.markdown('<div class="visible-box"><b>🖼️ Upload Photos, Videos, Audio, or Documents for AI Explanation</b></div>', unsafe_allow_html=True)
+    # ================= 2. MULTI-MEDIA EXPLANATION PANEL =================
+    st.markdown('<div class="glass-card"><b>🖼️ Upload Photos, Videos, Audio, or Documents for AI Explanation</b>', unsafe_allow_html=True)
     up_c1, up_c2 = st.columns([2, 1])
     with up_c1:
         up_file = st.file_uploader(
@@ -389,7 +394,7 @@ else:
             key="media_uploader",
             label_visibility="collapsed"
         )
-        file_msg = st.text_input("Ask anything about this file:", placeholder="e.g. Explain this image/video details or solve questions in it", key="file_caption")
+        file_msg = st.text_input("Ask questions regarding this file:", placeholder="e.g. Explain this file in both English and Kannada", key="file_caption")
     with up_c2:
         if up_file:
             st.success(f"Attached: {up_file.name}")
@@ -401,13 +406,13 @@ else:
                 st.audio(up_file)
 
             if st.button("⚡ Explain with Zeno AI", use_container_width=True):
-                user_question = file_msg if file_msg.strip() else f"Explain this uploaded file ({up_file.name}) in detail with accurate points."
+                user_question = file_msg if file_msg.strip() else f"Explain this uploaded file ({up_file.name}) in detail with accurate points in both English and Kannada."
                 user_messages.append({"role": "user", "content": f"📎 [Uploaded: {up_file.name}] {user_question}"})
 
                 ai_prompt = (
-                    f"The user has uploaded a file named '{up_file.name}' of type '{up_file.type}'. "
+                    f"The user uploaded a file named '{up_file.name}' of type '{up_file.type}'. "
                     f"User request: '{user_question}'. "
-                    "Provide a thorough, highly accurate, and clear explanation of the content, key takeaways, and answer any questions asked."
+                    "Provide a thorough, accurate, and structured explanation of the content in English and Kannada."
                 )
                 bot_reply = call_groq_api_robust(ai_prompt)
                 user_messages.append({"role": "assistant", "content": bot_reply})
@@ -415,23 +420,50 @@ else:
                     all_histories[current_user] = user_messages
                     save_data(HISTORY_FILE, all_histories)
                 st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # ================= 3. DISPLAY CHAT HISTORY =================
-    for msg in user_messages:
+    # ================= 3. DISPLAY CHAT HISTORY & VOICE SPEAKER =================
+    for idx, msg in enumerate(user_messages):
         avatar = "⚡" if msg["role"] == "assistant" else "👤"
         with st.chat_message(msg["role"], avatar=avatar):
             if msg.get("image_url"):
                 st.image(msg["image_url"], caption="Generated Illustration")
             st.markdown(msg["content"])
+            
+            # Interactive Working Speaker for every Assistant reply
+            if msg["role"] == "assistant" and len(msg["content"].strip()) > 0:
+                clean_text_for_speech = re.sub(r'[*#_`]', '', msg["content"][:280]).replace('"', '\\"').replace('\n', ' ')
+                speech_button_html = f"""
+                <div style="margin-top: 6px;">
+                    <button class="speaker-btn-ui" onclick='playVoice("{clean_text_for_speech}")'>🔊 Read Aloud</button>
+                    <button class="speaker-btn-ui" style="background: rgba(255, 0, 127, 0.4); color: #fff; margin-left: 6px;" onclick='window.speechSynthesis.cancel()'>⏹️ Stop</button>
+                </div>
+                """
+                st.components.v1.html(speech_button_html, height=36)
 
-    # ================= 4. CLASSIC TOUCH TO SPEAK MIC BUTTON =================
+    # ================= 4. GLOBAL AUDIO ENGINE INJECTION =================
+    st.components.v1.html("""
+    <script>
+        window.playVoice = function(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.rate = 1.0;
+                utter.pitch = 1.0;
+                window.speechSynthesis.speak(utter);
+            }
+        };
+    </script>
+    """, height=0)
+
+    # ================= 5. TOUCH TO SPEAK MIC =================
     mic_html = """
-    <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 10px 0 6px 0;">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 12px 0 6px 0;">
         <button id="micBtn" type="button" style="
             background: linear-gradient(45deg, #00f2fe, #ff007f);
             border: 2px solid #ffffff;
             color: #ffffff;
-            padding: 10px 26px;
+            padding: 10px 28px;
             border-radius: 26px;
             font-weight: 800;
             font-size: 14px;
@@ -452,7 +484,7 @@ else:
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (!SpeechRec) {
-            status.innerText = "Please open this site in Google Chrome.";
+            status.innerText = "Please open this website in Google Chrome.";
         } else {
             const rec = new SpeechRec();
             rec.continuous = false;
@@ -532,7 +564,7 @@ else:
     """
     st.components.v1.html(mic_html, height=55)
 
-    # ================= 5. CHAT INPUT (ANSWERS & IMAGE GEN) =================
+    # ================= 6. CHAT INPUT =================
     user_prompt = st.chat_input("Ask Zeno anything or type 'image: car' to generate...")
 
     if user_prompt:
@@ -562,7 +594,7 @@ else:
                     all_histories[current_user] = user_messages
                     save_data(HISTORY_FILE, all_histories)
 
-            # Accurate Universal AI Answer Engine
+            # Accurate Universal Bilingual Engine (English + Kannada)
             else:
                 with st.spinner("Zeno is thinking..."):
                     raw_reply = call_groq_api_robust(user_prompt)
@@ -572,17 +604,4 @@ else:
                 if is_logged_in:
                     all_histories[current_user] = user_messages
                     save_data(HISTORY_FILE, all_histories)
-
-                # Optional Clean Voice Playback for short replies
-                if len(raw_reply) < 300:
-                    clean_spoken = raw_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "")
-                    tts_js = f"""
-                    <script>
-                        if ('speechSynthesis' in window) {{
-                            window.speechSynthesis.cancel();
-                            const utter = new SpeechSynthesisUtterance("{clean_spoken}");
-                            window.speechSynthesis.speak(utter);
-                        }}
-                    </script>
-                    """
-                    st.components.v1.html(tts_js, height=0)
+                st.rerun()
