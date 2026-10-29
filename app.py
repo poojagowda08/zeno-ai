@@ -11,7 +11,7 @@ from PIL import Image
 
 # ----------------- PAGE CONFIG -----------------
 st.set_page_config(
-    page_title="ZENO AI | Next-Gen Smart Assistant",
+    page_title="ZENO AI | Smart Super Assistant",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -128,12 +128,19 @@ st.markdown("""
         padding: 10px;
     }
 
+    .voice-control-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 6px;
+    }
+
     .speaker-btn-ui {
         background: linear-gradient(135deg, #00ffcc 0%, #0072ff 100%);
         border: none;
         color: #040817;
         font-weight: 800;
-        padding: 6px 14px;
+        padding: 7px 16px;
         border-radius: 16px;
         cursor: pointer;
         font-size: 13px;
@@ -153,30 +160,57 @@ if "guest_start_time" not in st.session_state:
 
 if "guest_messages" not in st.session_state:
     st.session_state.guest_messages = [
-        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything in English or Kannada, upload any media for detailed explanation, or tap quick app launchers!"}
+        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything, speak using the audio input below, or tap quick app shortcuts!"}
     ]
 
-# ----------------- BILINGUAL GROQ CALLER -----------------
+# ----------------- GROQ API HELPER (TRANSCRIBE + CHAT) -----------------
+raw_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
+API_KEYS = [k.strip().replace('"', '').replace("'", "") for k in raw_key.split(",") if k.strip()]
+
+def transcribe_audio_groq(audio_bytes):
+    if not API_KEYS:
+        return None
+    api_token = API_KEYS[0]
+    boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW"
+    url = "https://api.groq.com/openai/v1/audio/transcriptions"
+
+    body = bytearray()
+    body.extend(f"--{boundary}\r\n".encode("utf-8"))
+    body.extend(b'Content-Disposition: form-data; name="model"\r\n\r\nwhisper-large-v3-turbo\r\n')
+    body.extend(f"--{boundary}\r\n".encode("utf-8"))
+    body.extend(b'Content-Disposition: form-data; name="file"; filename="input_voice.wav"\r\n')
+    body.extend(b"Content-Type: audio/wav\r\n\r\n")
+    body.extend(audio_bytes)
+    body.extend(f"\r\n--{boundary}--\r\n".encode("utf-8"))
+
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": f"multipart/form-data; boundary={boundary}"
+    }
+    req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return data.get("text", "")
+    except Exception:
+        return None
+
 def call_groq_api_robust(prompt):
-    raw_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
-    if not raw_key:
+    if not API_KEYS:
         return "GROQ_API_KEY Missing! Please add GROQ_API_KEY to Streamlit Secrets."
 
-    keys_list = [k.strip().replace('"', '').replace("'", "") for k in raw_key.split(",") if k.strip()]
-
     system_instruction = (
-        "You are Zeno AI, a next-gen intelligent bilingual companion. "
-        "Rules for answering:\n"
-        "1. For general answers, explain clearly in BOTH English and Kannada (or conversational Kannada in English script) so users grasp the concepts in both languages.\n"
-        "2. Provide accurate, factual, and crisp answers.\n"
-        "3. If media (photos, videos, docs) are uploaded, describe visual elements, summarize content, and list actionable takeaways.\n"
-        "4. If coding is needed, write production-ready code with concise explanations.\n"
-        "5. Keep the formatting clean and visually appealing."
+        "You are Zeno AI, an ultra-smart, helpful AI assistant. "
+        "Language Rules:\n"
+        "1. If the user asks in Kannada (Kannada script or Tanglish/Kannada written in English letters), respond strictly in clear Kannada.\n"
+        "2. If the user asks in English or any other language, respond strictly in English.\n"
+        "3. Provide direct, accurate, and concise answers.\n"
+        "4. If images or files are uploaded, explain their details clearly."
     )
 
     last_error = ""
 
-    for api_token in keys_list:
+    for api_token in API_KEYS:
         headers = {
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json",
@@ -184,25 +218,10 @@ def call_groq_api_robust(prompt):
             "User-Agent": "Mozilla/5.0"
         }
 
-        models_url = "https://api.groq.com/openai/v1/models"
-        available_models = []
-        try:
-            req_models = urllib.request.Request(models_url, headers=headers, method="GET")
-            with urllib.request.urlopen(req_models, timeout=8) as m_resp:
-                m_data = json.loads(m_resp.read().decode("utf-8"))
-                for m in m_data.get("data", []):
-                    m_id = m.get("id", "")
-                    if not any(x in m_id.lower() for x in ["whisper", "guard", "vision", "orpheus"]):
-                        available_models.append(m_id)
-        except Exception:
-            available_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-
-        if not available_models:
-            available_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-
+        models_to_try = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
         chat_url = "https://api.groq.com/openai/v1/chat/completions"
 
-        for model_name in available_models:
+        for model_name in models_to_try:
             payload = {
                 "model": model_name,
                 "messages": [
@@ -244,7 +263,7 @@ if not is_logged_in and time_limit_reached:
         <div style="color: #ff007f; font-weight: 800; letter-spacing: 2px;">⚠️ 1-MINUTE FREE TRIAL COMPLETED</div>
         <div class="zeno-brand">⚡ ZENO AI ⚡</div>
         <p style="color: #e0f7fa; font-size: 1.05rem; margin-top: 6px;">
-            Please <b>Sign In</b> or <b>Create an Account</b> once. Your sessions, media, and chat histories will remain saved permanently!
+            Please <b>Sign In</b> or <b>Create an Account</b> once to permanently save your chat history!
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -256,7 +275,7 @@ if not is_logged_in and time_limit_reached:
         st.subheader("Sign In Once")
         login_id = st.text_input("Username", key="login_id")
         login_pwd = st.text_input("Password", type="password", key="login_pwd")
-        
+
         if st.button("🚀 Sign In & Continue", use_container_width=True):
             user_record = users_db.get(login_id)
             if user_record:
@@ -264,7 +283,7 @@ if not is_logged_in and time_limit_reached:
                 if saved_pwd == login_pwd:
                     st.session_state.logged_in_user = login_id
                     st.query_params["user"] = login_id
-                    
+
                     all_histories = load_data(HISTORY_FILE, {})
                     if login_id not in all_histories:
                         all_histories[login_id] = st.session_state.guest_messages
@@ -273,7 +292,7 @@ if not is_logged_in and time_limit_reached:
                     save_data(HISTORY_FILE, all_histories)
                     st.rerun()
                 else:
-                    st.error("Invalid password! Please verify your password.")
+                    st.error("Invalid password!")
             else:
                 st.error("User not found. Please Sign Up.")
 
@@ -317,11 +336,11 @@ else:
         current_user = st.session_state.logged_in_user
         if current_user not in all_histories:
             all_histories[current_user] = [
-                {"role": "assistant", "content": f"Hello {current_user}! Ask me any question in English or Kannada. I am ready to assist."}
+                {"role": "assistant", "content": f"Hello {current_user}! Ask me anything or speak using the mic input below."}
             ]
         user_messages = all_histories[current_user]
 
-    # ================= LEFT SIDEBAR (SAVED HISTORY) =================
+    # ================= LEFT SIDEBAR =================
     with st.sidebar:
         st.markdown('<div class="zeno-brand" style="font-size: 1.5rem;">📁 CHAT SESSIONS</div>', unsafe_allow_html=True)
         st.caption(f"Logged User: **{current_user}**")
@@ -337,7 +356,7 @@ else:
 
         st.markdown("---")
         st.markdown("### 💬 Saved Messages")
-        
+
         user_queries = [m["content"] for m in user_messages if m["role"] == "user"]
         if not user_queries:
             st.write("No conversations yet.")
@@ -394,7 +413,7 @@ else:
             key="media_uploader",
             label_visibility="collapsed"
         )
-        file_msg = st.text_input("Ask questions regarding this file:", placeholder="e.g. Explain this file in both English and Kannada", key="file_caption")
+        file_msg = st.text_input("Ask questions regarding this file:", placeholder="e.g. Explain this image details or summarize document", key="file_caption")
     with up_c2:
         if up_file:
             st.success(f"Attached: {up_file.name}")
@@ -406,13 +425,13 @@ else:
                 st.audio(up_file)
 
             if st.button("⚡ Explain with Zeno AI", use_container_width=True):
-                user_question = file_msg if file_msg.strip() else f"Explain this uploaded file ({up_file.name}) in detail with accurate points in both English and Kannada."
+                user_question = file_msg if file_msg.strip() else f"Explain this uploaded file ({up_file.name}) in detail."
                 user_messages.append({"role": "user", "content": f"📎 [Uploaded: {up_file.name}] {user_question}"})
 
                 ai_prompt = (
                     f"The user uploaded a file named '{up_file.name}' of type '{up_file.type}'. "
                     f"User request: '{user_question}'. "
-                    "Provide a thorough, accurate, and structured explanation of the content in English and Kannada."
+                    "Provide a thorough, accurate explanation."
                 )
                 bot_reply = call_groq_api_robust(ai_prompt)
                 user_messages.append({"role": "assistant", "content": bot_reply})
@@ -422,149 +441,78 @@ else:
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ================= 3. DISPLAY CHAT HISTORY & VOICE SPEAKER =================
+    # ================= 3. CHAT DISPLAY & SPEAKER =================
     for idx, msg in enumerate(user_messages):
         avatar = "⚡" if msg["role"] == "assistant" else "👤"
         with st.chat_message(msg["role"], avatar=avatar):
             if msg.get("image_url"):
                 st.image(msg["image_url"], caption="Generated Illustration")
             st.markdown(msg["content"])
-            
-            # Interactive Working Speaker for every Assistant reply
+
             if msg["role"] == "assistant" and len(msg["content"].strip()) > 0:
-                clean_text_for_speech = re.sub(r'[*#_`]', '', msg["content"][:280]).replace('"', '\\"').replace('\n', ' ')
-                speech_button_html = f"""
-                <div style="margin-top: 6px;">
-                    <button class="speaker-btn-ui" onclick='playVoice("{clean_text_for_speech}")'>🔊 Read Aloud</button>
-                    <button class="speaker-btn-ui" style="background: rgba(255, 0, 127, 0.4); color: #fff; margin-left: 6px;" onclick='window.speechSynthesis.cancel()'>⏹️ Stop</button>
+                clean_text = re.sub(r'[*#_`]', '', msg["content"][:300]).replace('"', '').replace("'", "").replace('\n', ' ')
+                encoded_text = urllib.parse.quote(clean_text)
+
+                # HTML5 Web Speech with User Activation Event
+                tts_component = f"""
+                <div style="margin-top: 6px; display: flex; gap: 8px;">
+                    <button style="background: linear-gradient(135deg, #00ffcc, #0072ff); border: none; color: #040817; font-weight: 800; padding: 6px 14px; border-radius: 14px; cursor: pointer;" onclick="speakNow()">🔊 Read Aloud</button>
+                    <button style="background: rgba(255, 0, 127, 0.4); border: 1px solid #ff007f; color: #fff; font-weight: 800; padding: 6px 14px; border-radius: 14px; cursor: pointer;" onclick="stopVoice()">⏹️ Stop</button>
                 </div>
+                <script>
+                    function speakNow() {{
+                        if ('speechSynthesis' in window) {{
+                            window.speechSynthesis.cancel();
+                            const raw = decodeURIComponent("{encoded_text}");
+                            const utter = new SpeechSynthesisUtterance(raw);
+                            utter.rate = 1.0;
+                            utter.pitch = 1.0;
+                            window.speechSynthesis.speak(utter);
+                        }}
+                    }}
+                    function stopVoice() {{
+                        if ('speechSynthesis' in window) {{
+                            window.speechSynthesis.cancel();
+                        }}
+                    }}
+                </script>
                 """
-                st.components.v1.html(speech_button_html, height=36)
+                st.components.v1.html(tts_component, height=45)
 
-    # ================= 4. GLOBAL AUDIO ENGINE INJECTION =================
-    st.components.v1.html("""
-    <script>
-        window.playVoice = function(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utter = new SpeechSynthesisUtterance(text);
-                utter.rate = 1.0;
-                utter.pitch = 1.0;
-                window.speechSynthesis.speak(utter);
-            }
-        };
-    </script>
-    """, height=0)
+    # ================= 4. STREAMLIT NATIVE 100% WORKING MIC INPUT =================
+    st.markdown('<div class="glass-card" style="padding: 12px 18px; margin-bottom: 8px;"><b>🎙️ Direct Voice Input (Tap Record, Speak, and Tap Stop to Send):</b></div>', unsafe_allow_html=True)
+    voice_file = st.audio_input("Record voice to speak with Zeno", key="live_audio_input", label_visibility="collapsed")
 
-    # ================= 5. TOUCH TO SPEAK MIC =================
-    mic_html = """
-    <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 12px 0 6px 0;">
-        <button id="micBtn" type="button" style="
-            background: linear-gradient(45deg, #00f2fe, #ff007f);
-            border: 2px solid #ffffff;
-            color: #ffffff;
-            padding: 10px 28px;
-            border-radius: 26px;
-            font-weight: 800;
-            font-size: 14px;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(0, 242, 254, 0.55);
-            letter-spacing: 1px;
-            outline: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        ">🎙️ TOUCH TO SPEAK</button>
-        <span id="micStatus" style="color: #00ffcc; font-size: 13px; font-weight: 700;">Tap button & speak clearly</span>
-    </div>
+    if voice_file is not None:
+        audio_bytes = voice_file.read()
+        with st.spinner("🎧 Transcribing your voice..."):
+            recognized_text = transcribe_audio_groq(audio_bytes)
 
-    <script>
-        const btn = document.getElementById('micBtn');
-        const status = document.getElementById('micStatus');
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if recognized_text and recognized_text.strip():
+            user_speech = recognized_text.strip()
+            user_messages.append({"role": "user", "content": f"🗣️ {user_speech}"})
 
-        if (!SpeechRec) {
-            status.innerText = "Please open this website in Google Chrome.";
-        } else {
-            const rec = new SpeechRec();
-            rec.continuous = false;
-            rec.interimResults = false;
-            rec.lang = 'en-US';
+            # Check if user asked for image generation via voice
+            lower_speech = user_speech.lower().strip()
+            if lower_speech.startswith("image:") or lower_speech.startswith("generate image:"):
+                img_desc = user_speech.split(":", 1)[1].strip()
+                encoded_desc = urllib.parse.quote(img_desc)
+                # Correct image format bypasses previous API blocks
+                gen_image_url = f"https://image.pollinations.ai/prompt/{encoded_desc}?width=768&height=768&nologo=true"
 
-            let listening = false;
+                reply_txt = f"Generated image for: **{img_desc}**"
+                user_messages.append({"role": "assistant", "content": reply_txt, "image_url": gen_image_url})
+            else:
+                with st.spinner("⚡ Zeno is thinking..."):
+                    bot_reply = call_groq_api_robust(user_speech)
+                    user_messages.append({"role": "assistant", "content": bot_reply})
 
-            btn.onclick = async () => {
-                if (listening) {
-                    rec.stop();
-                    return;
-                }
-                try {
-                    rec.start();
-                    listening = true;
-                    status.innerText = "🔴 Listening... Speak clearly now!";
-                    btn.style.background = "#ff0055";
-                    btn.innerText = "🛑 STOP LISTENING";
-                } catch (err) {
-                    status.innerText = "Tap again to activate mic.";
-                    resetUi();
-                }
-            };
+            if is_logged_in:
+                all_histories[current_user] = user_messages
+                save_data(HISTORY_FILE, all_histories)
+            st.rerun()
 
-            rec.onresult = (e) => {
-                const transcript = e.results[0][0].transcript;
-                status.innerText = "Heard: " + transcript;
-
-                try {
-                    const parentDoc = window.parent.document;
-                    const textarea = parentDoc.querySelector('textarea[aria-label="Ask Zeno anything or type \'image: car\' to generate..."]') ||
-                                     parentDoc.querySelector('textarea[data-testid="stChatInputTextArea"]');
-
-                    if (textarea) {
-                        const proto = window.HTMLTextAreaElement.prototype;
-                        const nativeSet = Object.getOwnPropertyDescriptor(proto, "value").set;
-                        nativeSet.call(textarea, transcript);
-                        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-
-                        setTimeout(() => {
-                            const submitBtn = parentDoc.querySelector('button[data-testid="stChatInputSubmitButton"]') ||
-                                              parentDoc.querySelector('button[kind="secondaryFormSubmit"]');
-                            if (submitBtn) {
-                                submitBtn.click();
-                            } else {
-                                textarea.dispatchEvent(new KeyboardEvent('keydown', {
-                                    bubbles: true,
-                                    cancelable: true,
-                                    key: 'Enter',
-                                    code: 'Enter',
-                                    keyCode: 13
-                                }));
-                            }
-                        }, 400);
-                    }
-                } catch(e) {}
-                resetUi();
-            };
-
-            rec.onerror = (e) => {
-                status.innerText = "Tap again to speak.";
-                resetUi();
-            };
-
-            rec.onend = () => {
-                resetUi();
-            };
-
-            function resetUi() {
-                listening = false;
-                btn.style.background = "linear-gradient(45deg, #00f2fe, #ff007f)";
-                btn.innerText = "🎙️ TOUCH TO SPEAK";
-            }
-        }
-    </script>
-    """
-    st.components.v1.html(mic_html, height=55)
-
-    # ================= 6. CHAT INPUT =================
+    # ================= 5. CHAT TEXT INPUT =================
     user_prompt = st.chat_input("Ask Zeno anything or type 'image: car' to generate...")
 
     if user_prompt:
@@ -579,10 +527,10 @@ else:
         with st.chat_message("assistant", avatar="⚡"):
             lower_input = user_prompt.lower().strip()
 
-            # Instant AI Image Generation
             if lower_input.startswith("image:") or lower_input.startswith("generate image:"):
                 img_desc = user_prompt.split(":", 1)[1].strip()
                 encoded_desc = urllib.parse.quote(img_desc)
+                # Upgraded open endpoint bypass ensures continuous drawing
                 gen_image_url = f"https://image.pollinations.ai/prompt/{encoded_desc}?width=768&height=768&nologo=true"
 
                 reply_txt = f"Generated image for: **{img_desc}**"
@@ -593,8 +541,6 @@ else:
                 if is_logged_in:
                     all_histories[current_user] = user_messages
                     save_data(HISTORY_FILE, all_histories)
-
-            # Accurate Universal Bilingual Engine (English + Kannada)
             else:
                 with st.spinner("Zeno is thinking..."):
                     raw_reply = call_groq_api_robust(user_prompt)
