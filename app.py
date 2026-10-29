@@ -128,13 +128,6 @@ st.markdown("""
         padding: 10px;
     }
 
-    .voice-control-box {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 6px;
-    }
-
     .speaker-btn-ui {
         background: linear-gradient(135deg, #00ffcc 0%, #0072ff 100%);
         border: none;
@@ -149,7 +142,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SESSION STATE & LOGIN PERSISTENCE -----------------
+# ----------------- SESSION STATE & 100% PERSISTENT LOGIN -----------------
 query_user = st.query_params.get("user", "")
 
 if "logged_in_user" not in st.session_state:
@@ -160,7 +153,7 @@ if "guest_start_time" not in st.session_state:
 
 if "guest_messages" not in st.session_state:
     st.session_state.guest_messages = [
-        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything, speak using the audio input below, or tap quick app shortcuts!"}
+        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything, speak using the unique mic below, or tap quick app shortcuts!"}
     ]
 
 # ----------------- GROQ API HELPER (TRANSCRIBE + CHAT) -----------------
@@ -250,20 +243,21 @@ def call_groq_api_robust(prompt):
 # ----------------- TIME & AUTH RULES -----------------
 is_logged_in = st.session_state.logged_in_user is not None
 
+# Ondu sala login aada mele yavathoo timer kelalla!
 if not is_logged_in:
     elapsed_seconds = int(time.time() - st.session_state.guest_start_time)
     time_limit_reached = (elapsed_seconds >= 60)
 else:
     time_limit_reached = False
 
-# ----------------- SIGN IN / SIGN UP OVERLAY -----------------
+# ----------------- SIGN IN / SIGN UP (ONLY FOR GUEST ONCE) -----------------
 if not is_logged_in and time_limit_reached:
     st.markdown("""
     <div class="glass-card" style="text-align: center; max-width: 520px; margin: 30px auto; border-color: #ff007f;">
         <div style="color: #ff007f; font-weight: 800; letter-spacing: 2px;">⚠️ 1-MINUTE FREE TRIAL COMPLETED</div>
         <div class="zeno-brand">⚡ ZENO AI ⚡</div>
         <p style="color: #e0f7fa; font-size: 1.05rem; margin-top: 6px;">
-            Please <b>Sign In</b> or <b>Create an Account</b> once to permanently save your chat history!
+            Please <b>Sign In</b> or <b>Create an Account</b> once. After this, your chat is permanently saved and login is never asked again!
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -276,7 +270,7 @@ if not is_logged_in and time_limit_reached:
         login_id = st.text_input("Username", key="login_id")
         login_pwd = st.text_input("Password", type="password", key="login_pwd")
 
-        if st.button("🚀 Sign In & Continue", use_container_width=True):
+        if st.button("🚀 Sign In & Continue Forever", use_container_width=True):
             user_record = users_db.get(login_id)
             if user_record:
                 saved_pwd = user_record["password"] if isinstance(user_record, dict) else user_record
@@ -336,7 +330,7 @@ else:
         current_user = st.session_state.logged_in_user
         if current_user not in all_histories:
             all_histories[current_user] = [
-                {"role": "assistant", "content": f"Hello {current_user}! Ask me anything or speak using the mic input below."}
+                {"role": "assistant", "content": f"Hello {current_user}! Ask me anything or speak using the unique mic below."}
             ]
         user_messages = all_histories[current_user]
 
@@ -383,7 +377,7 @@ else:
         if not is_logged_in:
             st.markdown(f'<div class="storage-badge" style="border-color: #ff007f; color: #ff80bf;">⏳ Free Trial: <b>{remaining_sec}s remaining</b></div>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div class="storage-badge">✅ Connected: <b>{current_user}</b> | Cloud Persistent History Active ({len(user_messages)} msgs)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="storage-badge">✅ Connected: <b>{current_user}</b> | Persistent Account Active ({len(user_messages)} msgs)</div>', unsafe_allow_html=True)
 
     # ================= 1. DIRECT APP LAUNCHERS =================
     st.markdown("""
@@ -453,7 +447,6 @@ else:
                 clean_text = re.sub(r'[*#_`]', '', msg["content"][:300]).replace('"', '').replace("'", "").replace('\n', ' ')
                 encoded_text = urllib.parse.quote(clean_text)
 
-                # HTML5 Web Speech with User Activation Event
                 tts_component = f"""
                 <div style="margin-top: 6px; display: flex; gap: 8px;">
                     <button style="background: linear-gradient(135deg, #00ffcc, #0072ff); border: none; color: #040817; font-weight: 800; padding: 6px 14px; border-radius: 14px; cursor: pointer;" onclick="speakNow()">🔊 Read Aloud</button>
@@ -479,27 +472,35 @@ else:
                 """
                 st.components.v1.html(tts_component, height=45)
 
-    # ================= 4. STREAMLIT NATIVE 100% WORKING MIC INPUT =================
-    st.markdown('<div class="glass-card" style="padding: 12px 18px; margin-bottom: 8px;"><b>🎙️ Direct Voice Input (Tap Record, Speak, and Tap Stop to Send):</b></div>', unsafe_allow_html=True)
+    # ================= 4. ULTRA-UNIQUE ANIMATED GLOWING MIC =================
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, rgba(13, 20, 50, 0.9), rgba(5, 8, 22, 0.9)); border: 2px solid #00f2fe; border-radius: 20px; padding: 14px 20px; margin-bottom: 10px; box-shadow: 0 0 25px rgba(0, 242, 254, 0.3);">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">🎙️</span>
+                <span style="color: #00ffcc; font-family: 'Orbitron'; font-weight: bold; font-size: 0.95rem; letter-spacing: 1px;">DIRECT VOICE INPUT (TAP RECORD -> SPEAK -> STOP)</span>
+            </div>
+            <span style="color: #ff007f; font-weight: 700; font-size: 0.85rem;">⚡ LIVE AUDIO CAPTURE</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     voice_file = st.audio_input("Record voice to speak with Zeno", key="live_audio_input", label_visibility="collapsed")
 
     if voice_file is not None:
         audio_bytes = voice_file.read()
-        with st.spinner("🎧 Transcribing your voice..."):
+        with st.spinner("🎧 Transcribing your voice with Groq Whisper AI..."):
             recognized_text = transcribe_audio_groq(audio_bytes)
 
         if recognized_text and recognized_text.strip():
             user_speech = recognized_text.strip()
             user_messages.append({"role": "user", "content": f"🗣️ {user_speech}"})
 
-            # Check if user asked for image generation via voice
             lower_speech = user_speech.lower().strip()
             if lower_speech.startswith("image:") or lower_speech.startswith("generate image:"):
                 img_desc = user_speech.split(":", 1)[1].strip()
                 encoded_desc = urllib.parse.quote(img_desc)
-                # Correct image format bypasses previous API blocks
                 gen_image_url = f"https://image.pollinations.ai/prompt/{encoded_desc}?width=768&height=768&nologo=true"
-
                 reply_txt = f"Generated image for: **{img_desc}**"
                 user_messages.append({"role": "assistant", "content": reply_txt, "image_url": gen_image_url})
             else:
@@ -530,7 +531,6 @@ else:
             if lower_input.startswith("image:") or lower_input.startswith("generate image:"):
                 img_desc = user_prompt.split(":", 1)[1].strip()
                 encoded_desc = urllib.parse.quote(img_desc)
-                # Upgraded open endpoint bypass ensures continuous drawing
                 gen_image_url = f"https://image.pollinations.ai/prompt/{encoded_desc}?width=768&height=768&nologo=true"
 
                 reply_txt = f"Generated image for: **{img_desc}**"
