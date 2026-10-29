@@ -83,8 +83,8 @@ st.markdown("""
         backdrop-filter: blur(14px);
         -webkit-backdrop-filter: blur(14px);
         border-radius: 18px;
-        padding: 18px 22px;
-        margin-bottom: 16px;
+        padding: 16px 20px;
+        margin-bottom: 14px;
     }
 
     .app-btn {
@@ -121,13 +121,6 @@ st.markdown("""
         margin-bottom: 8px;
     }
 
-    div[data-testid="stFileUploader"] {
-        background: rgba(8, 14, 38, 0.8);
-        border: 1.5px dashed #00f2fe;
-        border-radius: 14px;
-        padding: 10px;
-    }
-
     .speaker-btn-ui {
         background: linear-gradient(135deg, #00ffcc 0%, #0072ff 100%);
         border: none;
@@ -153,7 +146,7 @@ if "guest_start_time" not in st.session_state:
 
 if "guest_messages" not in st.session_state:
     st.session_state.guest_messages = [
-        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything, upload images/files for explanation, or use quick app shortcuts below!"}
+        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything, upload photo/video/docs, take a camera snap, or tap quick app shortcuts!"}
     ]
 
 # ----------------- DYNAMIC MODEL GROQ CALLER -----------------
@@ -166,11 +159,11 @@ def call_groq_api_robust(prompt):
 
     system_instruction = (
         "You are Zeno AI, an ultra-smart, helpful AI assistant. "
-        "Language Rules:\n"
-        "1. If the user asks in Kannada (Kannada script or Tanglish/Kannada written in English letters), respond strictly in clear Kannada.\n"
-        "2. If the user asks in English or any other language, respond strictly in English.\n"
+        "Strict Language Rules:\n"
+        "1. If the user asks in Kannada (Kannada script or Tanglish/Kannada written using English letters), respond strictly in clear Kannada.\n"
+        "2. If the user asks in English or any other language, respond strictly in English. Never reply in Kannada unless asked in Kannada.\n"
         "3. Provide direct, accurate, and concise answers.\n"
-        "4. If images or files are uploaded, explain their details clearly."
+        "4. If images, camera snaps, or documents are uploaded, explain their details clearly."
     )
 
     last_error = ""
@@ -183,7 +176,7 @@ def call_groq_api_robust(prompt):
             "User-Agent": "Mozilla/5.0"
         }
 
-        # Live model discovery
+        # Dynamic model fetch
         available_models = []
         try:
             req_models = urllib.request.Request("https://api.groq.com/openai/v1/models", headers=headers, method="GET")
@@ -316,7 +309,7 @@ else:
         current_user = st.session_state.logged_in_user
         if current_user not in all_histories:
             all_histories[current_user] = [
-                {"role": "assistant", "content": f"Hello {current_user}! Ask me anything in English or Kannada."}
+                {"role": "assistant", "content": f"Hello {current_user}! Ask me anything. Upload files, capture camera snaps, or type below."}
             ]
         user_messages = all_histories[current_user]
 
@@ -365,7 +358,7 @@ else:
         else:
             st.markdown(f'<div class="storage-badge">✅ Connected: <b>{current_user}</b> | Persistent Account Active ({len(user_messages)} msgs)</div>', unsafe_allow_html=True)
 
-    # ================= 1. DIRECT APP LAUNCHERS =================
+    # ================= QUICK APP LAUNCHERS =================
     st.markdown("""
     <div class="glass-card" style="border-color: #00ffcc;">
         <div style="color: #00ffcc; font-family: 'Orbitron'; font-size: 1.05rem; font-weight: bold; margin-bottom: 8px;">
@@ -383,45 +376,7 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # ================= 2. MULTI-MEDIA EXPLANATION PANEL =================
-    st.markdown('<div class="glass-card"><b>🖼️ Upload Photos, Videos, Audio, or Documents for AI Explanation</b>', unsafe_allow_html=True)
-    up_c1, up_c2 = st.columns([2, 1])
-    with up_c1:
-        up_file = st.file_uploader(
-            "Upload file (Images, Videos, Audios, PDFs, Docs)",
-            type=["png", "jpg", "jpeg", "mp4", "mov", "mkv", "mp3", "wav", "pdf", "txt"],
-            key="media_uploader",
-            label_visibility="collapsed"
-        )
-        file_msg = st.text_input("Ask questions regarding this file:", placeholder="e.g. Explain this image details or summarize document", key="file_caption")
-    with up_c2:
-        if up_file:
-            st.success(f"Attached: {up_file.name}")
-            if up_file.type.startswith("image/"):
-                st.image(up_file, width=150)
-            elif up_file.type.startswith("video/"):
-                st.video(up_file)
-            elif up_file.type.startswith("audio/"):
-                st.audio(up_file)
-
-            if st.button("⚡ Explain with Zeno AI", use_container_width=True):
-                user_question = file_msg if file_msg.strip() else f"Explain this uploaded file ({up_file.name}) in detail."
-                user_messages.append({"role": "user", "content": f"📎 [Uploaded: {up_file.name}] {user_question}"})
-
-                ai_prompt = (
-                    f"The user uploaded a file named '{up_file.name}' of type '{up_file.type}'. "
-                    f"User request: '{user_question}'. "
-                    "Provide a thorough, accurate explanation."
-                )
-                bot_reply = call_groq_api_robust(ai_prompt)
-                user_messages.append({"role": "assistant", "content": bot_reply})
-                if is_logged_in:
-                    all_histories[current_user] = user_messages
-                    save_data(HISTORY_FILE, all_histories)
-                st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # ================= 3. CHAT DISPLAY & SPEAKER =================
+    # ================= CHAT DISPLAY & SPEAKER =================
     for idx, msg in enumerate(user_messages):
         avatar = "⚡" if msg["role"] == "assistant" else "👤"
         with st.chat_message(msg["role"], avatar=avatar):
@@ -458,41 +413,79 @@ else:
                 """
                 st.components.v1.html(tts_component, height=45)
 
-    # ================= 4. CHAT TEXT INPUT =================
-    user_prompt = st.chat_input("Ask Zeno anything or type 'image: car' to generate...")
+    # ================= BOTTOM SEND AREA: ATTACHMENTS + CAMERA + CHAT =================
+    st.markdown('<div class="glass-card" style="border-color: #00f2fe; margin-top: 15px;">', unsafe_allow_html=True)
+    
+    # 1. Attachment controls directly above send input
+    col_file, col_cam = st.columns([1.5, 1])
+    with col_file:
+        up_file = st.file_uploader(
+            "📁 Attach Photo / Video / PDF / Audio",
+            type=["png", "jpg", "jpeg", "mp4", "mov", "mkv", "mp3", "wav", "pdf", "txt"],
+            key="bottom_file_uploader"
+        )
+    with col_cam:
+        cam_snap = st.camera_input("📷 Take Direct Camera Snap", key="bottom_camera_snap")
 
-    if user_prompt:
-        user_messages.append({"role": "user", "content": user_prompt})
-        if is_logged_in:
-            all_histories[current_user] = user_messages
-            save_data(HISTORY_FILE, all_histories)
+    # Show preview if selected
+    if up_file:
+        st.info(f"Selected File: **{up_file.name}**")
+        if up_file.type.startswith("image/"):
+            st.image(up_file, width=130)
+    if cam_snap:
+        st.info("Direct Camera Photo Captured!")
+        st.image(cam_snap, width=130)
 
-        with st.chat_message("user", avatar="👤"):
-            st.markdown(user_prompt)
+    # 2. Text input with Send Button
+    col_input, col_send = st.columns([4.2, 0.8])
+    with col_input:
+        user_prompt = st.text_input(
+            "Message",
+            placeholder="Ask Zeno anything, type 'image: car', or describe the attached file/snap...",
+            key="bottom_chat_text",
+            label_visibility="collapsed"
+        )
+    with col_send:
+        send_btn = st.button("🚀 Send", use_container_width=True)
 
-        with st.chat_message("assistant", avatar="⚡"):
-            lower_input = user_prompt.lower().strip()
+    st.markdown('</div>', unsafe_allow_html=True)
 
+    # ================= SUBMIT & SEND LOGIC =================
+    if send_btn:
+        has_file = (up_file is not None)
+        has_cam = (cam_snap is not None)
+        has_text = bool(user_prompt.strip())
+
+        if has_file or has_cam or has_text:
+            final_user_msg = user_prompt.strip()
+
+            # Handle File attachment
+            if has_file:
+                prefix = f"📎 [Attached: {up_file.name}] "
+                final_user_msg = prefix + (final_user_msg if final_user_msg else f"Please explain this uploaded {up_file.name} in detail.")
+
+            # Handle Camera snap
+            if has_cam:
+                prefix = "📷 [Live Camera Snap] "
+                final_user_msg = prefix + (final_user_msg if final_user_msg else "Please explain this captured camera photo in detail.")
+
+            user_messages.append({"role": "user", "content": final_user_msg})
+
+            # Check for AI image generation
+            lower_input = final_user_msg.lower().strip()
             if lower_input.startswith("image:") or lower_input.startswith("generate image:"):
-                img_desc = user_prompt.split(":", 1)[1].strip()
+                img_desc = final_user_msg.split(":", 1)[1].strip()
                 encoded_desc = urllib.parse.quote(img_desc)
                 gen_image_url = f"https://image.pollinations.ai/prompt/{encoded_desc}?width=768&height=768&nologo=true"
 
                 reply_txt = f"Generated image for: **{img_desc}**"
-                st.image(gen_image_url, caption=f"Prompt: {img_desc}")
-                st.markdown(reply_txt)
-
                 user_messages.append({"role": "assistant", "content": reply_txt, "image_url": gen_image_url})
-                if is_logged_in:
-                    all_histories[current_user] = user_messages
-                    save_data(HISTORY_FILE, all_histories)
             else:
-                with st.spinner("Zeno is thinking..."):
-                    raw_reply = call_groq_api_robust(user_prompt)
-                st.markdown(raw_reply)
-
+                with st.spinner("⚡ Zeno is thinking..."):
+                    raw_reply = call_groq_api_robust(final_user_msg)
                 user_messages.append({"role": "assistant", "content": raw_reply})
-                if is_logged_in:
-                    all_histories[current_user] = user_messages
-                    save_data(HISTORY_FILE, all_histories)
-                st.rerun()
+
+            if is_logged_in:
+                all_histories[current_user] = user_messages
+                save_data(HISTORY_FILE, all_histories)
+            st.rerun()
