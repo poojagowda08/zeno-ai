@@ -11,7 +11,7 @@ from PIL import Image
 
 # ----------------- PAGE CONFIG -----------------
 st.set_page_config(
-    page_title="ZENO AI | English Coach Core",
+    page_title="ZENO AI | Smart Super Assistant",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -46,39 +46,6 @@ def is_strong_password(password):
     if not re.search(r"[@#$%^&*!_\-+=]", password):
         return False, "Password nalli ondhu special symbol (@, #, $, %, &, *, !) erbeku."
     return True, "Strong Password!"
-
-# ----------------- ROTATING DAILY TOPICS -----------------
-DAILY_TOPICS = [
-    {
-        "title": "Polite Workplace Requests",
-        "lesson": "Instead of saying 'Give me that file', say 'Could you please share that file with me?'. It creates immediate respect.",
-        "phrase": "Could you please help me with this task?"
-    },
-    {
-        "title": "Natural Daily Routine",
-        "lesson": "Avoid saying 'Today morning I came'. Always say 'This morning I came'. It sounds fluent and natural.",
-        "phrase": "This morning I started my project practice."
-    },
-    {
-        "title": "Food & Cafe Ordering",
-        "lesson": "Don't say 'Give me coffee'. Use 'Can I please get a cup of coffee?' or 'I would like to order a tea'.",
-        "phrase": "Can I get a hot coffee with less sugar?"
-    },
-    {
-        "title": "Handling Mistakes Gracefully",
-        "lesson": "When a mistake happens, don't say sorry repeatedly. Say: 'My apologies, allow me to clarify that.'",
-        "phrase": "Pardon me, let me rephrase that."
-    },
-    {
-        "title": "Expressing Opinions Confidently",
-        "lesson": "Instead of repeatedly saying 'I think', use 'From my perspective' or 'In my view'.",
-        "phrase": "From my perspective, this approach is faster."
-    }
-]
-
-def get_today_topic():
-    day_idx = date.today().timetuple().tm_yday % len(DAILY_TOPICS)
-    return DAILY_TOPICS[day_idx]
 
 # ----------------- NEON CYBERPUNK STYLING -----------------
 st.markdown("""
@@ -120,17 +87,8 @@ st.markdown("""
         max-width: 550px;
     }
 
-    .daily-card {
-        background: linear-gradient(135deg, rgba(0, 242, 254, 0.16) 0%, rgba(255, 0, 127, 0.2) 100%);
-        border: 1.5px solid #00f2fe;
-        border-radius: 16px;
-        padding: 14px 18px;
-        margin: 10px 0 14px 0;
-        box-shadow: 0 0 20px rgba(0, 242, 254, 0.2);
-    }
-
-    .install-card {
-        background: rgba(10, 25, 55, 0.9);
+    .app-box {
+        background: rgba(10, 25, 55, 0.85);
         border: 1.5px solid #00ffcc;
         border-radius: 16px;
         padding: 14px 18px;
@@ -140,11 +98,10 @@ st.markdown("""
 
     .visible-box {
         background: rgba(15, 23, 58, 0.85);
-        border: 1px solid #00ffcc;
+        border: 1px solid #00f2fe;
         border-radius: 14px;
         padding: 14px;
         margin-bottom: 12px;
-        box-shadow: 0 0 15px rgba(0, 255, 204, 0.15);
     }
 
     .storage-badge {
@@ -158,16 +115,28 @@ st.markdown("""
         margin-bottom: 6px;
     }
 
-    div[data-testid="stFileUploader"] {
-        background: rgba(10, 16, 42, 0.8);
-        border: 1px dashed #00f2fe;
+    .app-btn {
+        display: inline-block;
+        background: linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(255, 0, 127, 0.2));
+        border: 1px solid #00f2fe;
+        color: #ffffff !important;
+        text-decoration: none;
+        padding: 8px 14px;
         border-radius: 12px;
-        padding: 8px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin: 4px;
+        box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .app-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px #00ffcc;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SESSION STATE & LOGIN PERSISTENCE -----------------
+# ----------------- SESSION STATE & PERSISTENT LOGIN -----------------
 query_user = st.query_params.get("user", "")
 
 if "logged_in_user" not in st.session_state:
@@ -176,15 +145,12 @@ if "logged_in_user" not in st.session_state:
 if "guest_start_time" not in st.session_state:
     st.session_state.guest_start_time = time.time()
 
-if "spoken_daily_topic" not in st.session_state:
-    st.session_state.spoken_daily_topic = False
-
 if "guest_messages" not in st.session_state:
     st.session_state.guest_messages = [
-        {"role": "assistant", "content": "Welcome! I am Zeno, your English coach. Speak or type to practice!"}
+        {"role": "assistant", "content": "Namaskara! Naanu Zeno AI. En prashne kelidru accurate aagi uthira kodtheeni. Photo, video athava files upload maadi explain madalu heli, athava apps open maadi!"}
     ]
 
-# ----------------- GROQ API CALLER -----------------
+# ----------------- ALL-PURPOSE ACCURATE GROQ CALLER -----------------
 def call_groq_api_robust(prompt):
     raw_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
     if not raw_key:
@@ -193,16 +159,14 @@ def call_groq_api_robust(prompt):
     keys_list = [k.strip().replace('"', '').replace("'", "") for k in raw_key.split(",") if k.strip()]
 
     system_instruction = (
-        "You are Zeno, a dedicated, highly skilled English language coach and tutor. "
-        "Your top priority is to teach English, improve fluency, correct grammar, explain uploaded files or images clearly, "
-        "and build communication confidence. "
+        "You are Zeno AI, an ultra-smart, highly accurate, general-purpose AI assistant. "
+        "You help users with everything: answering questions with high factual accuracy, solving code, explaining uploaded photos/videos/documents, summarizing data, and everyday tasks. "
         "Rules for responding:\n"
-        "1. If an image or file is uploaded, explain what it is, its meaning, vocabulary related to it, and how to talk about it in fluent English.\n"
-        "2. If the user's input has ANY grammatical error, immediately give the corrected version clearly, then explain briefly.\n"
-        "3. If the user writes or asks how to say something in English, teach them the natural spoken way.\n"
-        "4. Teach practical vocabulary and conversation phrases.\n"
-        "5. Keep responses concise, direct, and conversational (2 to 4 sentences maximum) suitable for speech output.\n"
-        "6. Never use markdown symbols like asterisks, hashes, or bullet points."
+        "1. Give direct, highly accurate, and helpful answers.\n"
+        "2. If an image, video, audio, or document is provided or described, thoroughly explain its content, key details, and implications.\n"
+        "3. Understand Kannada, English, and Tanglish naturally. Respond clearly based on user preferences.\n"
+        "4. If the user asks for code, provide clean, executable code with brief explanation.\n"
+        "5. Keep responses structured, neat, and engaging."
     )
 
     last_error = ""
@@ -212,7 +176,7 @@ def call_groq_api_robust(prompt):
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            "User-Agent": "Mozilla/5.0"
         }
 
         models_url = "https://api.groq.com/openai/v1/models"
@@ -226,10 +190,10 @@ def call_groq_api_robust(prompt):
                     if not any(x in m_id.lower() for x in ["whisper", "guard", "vision", "orpheus"]):
                         available_models.append(m_id)
         except Exception:
-            available_models = ["llama-3.1-8b-instant", "llama3-8b-8192", "gemma2-9b-it"]
+            available_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
 
         if not available_models:
-            available_models = ["llama-3.1-8b-instant", "llama3-8b-8192"]
+            available_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
 
         chat_url = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -240,13 +204,13 @@ def call_groq_api_robust(prompt):
                     {"role": "system", "content": system_instruction},
                     {"role": "user", "content": prompt}
                 ],
-                "temperature": 0.5
+                "temperature": 0.3
             }
             body_data = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(chat_url, data=body_data, headers=headers, method="POST")
 
             try:
-                with urllib.request.urlopen(req, timeout=15) as response:
+                with urllib.request.urlopen(req, timeout=18) as response:
                     res = json.loads(response.read().decode("utf-8"))
                     return res["choices"][0]["message"]["content"]
             except urllib.error.HTTPError as e:
@@ -268,11 +232,11 @@ if not is_logged_in:
 else:
     time_limit_reached = False
 
-# ----------------- SIGN IN / SIGN UP (ONLY FOR GUEST AFTER 1 MIN) -----------------
+# ----------------- SIGN IN / SIGN UP (GUEST AFTER 1 MIN) -----------------
 if not is_logged_in and time_limit_reached:
     st.markdown("""
     <div class="enter-card">
-        <div style="color: #ff007f; font-weight: 800; letter-spacing: 2px;">⚠️ 1-MINUTE FREE TRIAL COMPLETED</div>
+        <div style="color: #ff007f; font-weight: 800; letter-spacing: 2px;">⚠️ 1-MINUTE TRIAL COMPLETED</div>
         <div class="zeno-brand">⚡ ZENO AI ⚡</div>
         <p style="color: #e0f7fa; font-size: 1.05rem; margin-top: 5px;">
             Ondu sala <b>Sign In</b> athava <b>Sign Up</b> maadi. Admele yavathoo login kelalla, permanent aagi chat save aagirathe!
@@ -295,7 +259,6 @@ if not is_logged_in and time_limit_reached:
                 if saved_pwd == login_pwd:
                     st.session_state.logged_in_user = login_id
                     st.query_params["user"] = login_id
-                    st.session_state.spoken_daily_topic = False
                     
                     all_histories = load_data(HISTORY_FILE, {})
                     if login_id not in all_histories:
@@ -331,17 +294,15 @@ if not is_logged_in and time_limit_reached:
                 save_data(USERS_FILE, users_db)
                 st.session_state.logged_in_user = new_id
                 st.query_params["user"] = new_id
-                st.session_state.spoken_daily_topic = False
 
                 all_histories = load_data(HISTORY_FILE, {})
                 all_histories[new_id] = st.session_state.guest_messages
                 save_data(HISTORY_FILE, all_histories)
                 st.rerun()
 
-# ----------------- MAIN TUTOR SCREEN (WITH LEFT SIDEBAR HISTORY) -----------------
+# ----------------- MAIN SMART DASHBOARD -----------------
 else:
     all_histories = load_data(HISTORY_FILE, {})
-    today_topic = get_today_topic()
 
     if not is_logged_in:
         current_user = "Guest"
@@ -351,7 +312,7 @@ else:
         current_user = st.session_state.logged_in_user
         if current_user not in all_histories:
             all_histories[current_user] = [
-                {"role": "assistant", "content": f"Hello {current_user}! Today's English lesson is ready. Let's practice speaking together!"}
+                {"role": "assistant", "content": f"Hello {current_user}! En prashne idru keli, accurate uthira kodo engine ready ide."}
             ]
         user_messages = all_histories[current_user]
 
@@ -361,7 +322,7 @@ else:
         st.caption(f"User: **{current_user}**")
 
         if st.button("➕ New Chat Session", use_container_width=True):
-            new_welcome = f"Hello {current_user}! Fresh conversation started. What would you like to practice now?"
+            new_welcome = f"Hello {current_user}! Fresh conversation started. En kelbeku iga?"
             if not is_logged_in:
                 st.session_state.guest_messages = [{"role": "assistant", "content": new_welcome}]
             else:
@@ -374,7 +335,7 @@ else:
         
         user_queries = [m["content"] for m in user_messages if m["role"] == "user"]
         if not user_queries:
-            st.write("No previous conversations yet.")
+            st.write("No conversations yet.")
         else:
             for query in reversed(user_queries[-15:]):
                 preview_text = query[:28] + "..." if len(query) > 28 else query
@@ -389,248 +350,190 @@ else:
                 st.session_state.logged_in_user = None
                 st.query_params.clear()
                 st.session_state.guest_start_time = time.time()
-                st.session_state.spoken_daily_topic = False
                 st.rerun()
 
     # ================= MAIN CONTENT HEADER =================
     head_col1, head_col2 = st.columns([3, 1])
     with head_col1:
-        st.markdown('<div class="zeno-brand">⚡ ZENO AI | ENGLISH COACH ⚡</div>', unsafe_allow_html=True)
+        st.markdown('<div class="zeno-brand">⚡ ZENO AI | SMART ASSISTANT ⚡</div>', unsafe_allow_html=True)
         if not is_logged_in:
             st.markdown(f'<div class="storage-badge" style="border-color: #ff007f; color: #ff80bf;">⏳ Free Trial: <b>{remaining_sec}s left</b></div>', unsafe_allow_html=True)
         else:
             st.markdown(f'<div class="storage-badge">✅ Permanent Login: <b>{current_user}</b> | Left Sidebar History Active ({len(user_messages)} msgs)</div>', unsafe_allow_html=True)
 
-    # HOW TO DOWNLOAD & INSTALL APP (IN ENGLISH)
+    # ================= 1. DIRECT APP LAUNCHERS (ONE-TAP SHORTCUTS) =================
     st.markdown("""
-    <div class="install-card">
-        <div style="color: #00ffcc; font-family: 'Orbitron'; font-size: 1.1rem; font-weight: bold; margin-bottom: 4px;">
-            📲 How to Download & Install Zeno AI App
+    <div class="app-box">
+        <div style="color: #00ffcc; font-family: 'Orbitron'; font-size: 1.05rem; font-weight: bold; margin-bottom: 8px;">
+            🚀 Quick App Launcher Shortcuts
         </div>
-        <div style="color: #e0f7fa; font-size: 0.95rem; line-height: 1.5;">
-            <b>For Android & PC (Google Chrome):</b><br/>
-            1. Open this website in your <b>Chrome Browser</b>.<br/>
-            2. Tap the <b>3 dots menu (⋮)</b> in the top right corner.<br/>
-            3. Tap <b>"Install app"</b> or <b>"Add to Home screen"</b>.<br/>
-            4. Click <b>"Install"</b>. The Zeno AI icon will appear directly on your home screen.<br/>
-            <b>For iPhone (Safari):</b> Tap the <b>Share Button</b> at the bottom, then tap <b>"Add to Home Screen"</b>.
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <a class="app-btn" href="https://www.google.com" target="_blank">🔍 Google Search</a>
+            <a class="app-btn" href="https://www.youtube.com" target="_blank">📺 YouTube</a>
+            <a class="app-btn" href="https://web.whatsapp.com" target="_blank">💬 WhatsApp</a>
+            <a class="app-btn" href="https://mail.google.com" target="_blank">✉️ Gmail</a>
+            <a class="app-btn" href="https://maps.google.com" target="_blank">🗺️ Google Maps</a>
+            <a class="app-btn" href="https://github.com" target="_blank">🐙 GitHub</a>
+            <a class="app-btn" href="https://www.instagram.com" target="_blank">📸 Instagram</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # DIRECT IMAGE & FILE EXPLANATION PANEL
-    st.markdown('<div class="visible-box"><b>🖼️ Send Image or File to Zeno for Instant English Explanation</b></div>', unsafe_allow_html=True)
+    # ================= 2. DIRECT MULTI-MEDIA EXPLANATION PANEL =================
+    st.markdown('<div class="visible-box"><b>🖼️ Upload Photos, Videos, Audio, or Documents for AI Explanation</b></div>', unsafe_allow_html=True)
     up_c1, up_c2 = st.columns([2, 1])
     with up_c1:
-        up_file = st.file_uploader("Upload Image, Document, or Audio", type=["png", "jpg", "jpeg", "mp3", "wav", "pdf", "txt"], key="main_visible_uploader", label_visibility="collapsed")
-        file_msg = st.text_input("Ask Zeno about this file (Optional):", placeholder="e.g. Explain this image in simple English and teach me new words", key="direct_file_caption")
+        up_file = st.file_uploader(
+            "Upload file (Images, Videos, Audios, PDFs, Docs)",
+            type=["png", "jpg", "jpeg", "mp4", "mov", "mkv", "mp3", "wav", "pdf", "txt"],
+            key="media_uploader",
+            label_visibility="collapsed"
+        )
+        file_msg = st.text_input("Ask anything about this file:", placeholder="e.g. Explain this image/video details or solve questions in it", key="file_caption")
     with up_c2:
         if up_file:
             st.success(f"Attached: {up_file.name}")
             if up_file.type.startswith("image/"):
-                st.image(up_file, width=140)
+                st.image(up_file, width=150)
+            elif up_file.type.startswith("video/"):
+                st.video(up_file)
             elif up_file.type.startswith("audio/"):
                 st.audio(up_file)
-            if st.button("📤 Explain this with Zeno AI", use_container_width=True):
-                user_question = file_msg if file_msg.strip() else f"Please explain this uploaded image or file named {up_file.name}. Describe what you see and teach me how to talk about it in fluent English."
+
+            if st.button("⚡ Explain with Zeno AI", use_container_width=True):
+                user_question = file_msg if file_msg.strip() else f"Explain this uploaded file ({up_file.name}) in detail with accurate points."
                 user_messages.append({"role": "user", "content": f"📎 [Uploaded: {up_file.name}] {user_question}"})
-                
+
                 ai_prompt = (
-                    f"The user uploaded a file named '{up_file.name}' of type '{up_file.type}'. "
-                    f"User message: '{user_question}'. "
-                    "As an expert English tutor, explain the topic clearly, describe key visual/content points in simple sentences, "
-                    "provide 2 useful vocabulary words related to it, and give a natural English phrase they can practice speaking."
+                    f"The user has uploaded a file named '{up_file.name}' of type '{up_file.type}'. "
+                    f"User request: '{user_question}'. "
+                    "Provide a thorough, highly accurate, and clear explanation of the content, key takeaways, and answer any questions asked."
                 )
                 bot_reply = call_groq_api_robust(ai_prompt)
-                clean_r = bot_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
-                user_messages.append({"role": "assistant", "content": clean_r})
+                user_messages.append({"role": "assistant", "content": bot_reply})
                 if is_logged_in:
                     all_histories[current_user] = user_messages
                     save_data(HISTORY_FILE, all_histories)
                 st.rerun()
 
-    # DAILY NOTIFICATION BANNER
-    st.markdown(f"""
-    <div class="daily-card">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #00ffcc; font-weight: 800; font-family: 'Orbitron'; font-size: 1rem;">🔔 DAILY TOPIC: {today_topic['title']}</span>
-            <span style="color: #ff007f; font-weight: bold; font-size: 0.85rem;">⭐ TODAY'S LESSON</span>
-        </div>
-        <p style="color: #e0f7fa; font-size: 1.05rem; margin: 6px 0 2px 0;">{today_topic['lesson']}</p>
-        <div style="color: #80deea; font-size: 0.95rem;"><b>💬 Practice Saying:</b> <i>"{today_topic['phrase']}"</i></div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # AUTO VOICE WELCOME
-    if not st.session_state.spoken_daily_topic:
-        st.session_state.spoken_daily_topic = True
-        greeting_name = "there" if not is_logged_in else current_user
-        spoken_daily = f"Hello {greeting_name}! Today's English topic is {today_topic['title']}. {today_topic['lesson']} Try repeating after me: {today_topic['phrase']}"
-        st.components.v1.html(f"""
-        <script>
-            if ('speechSynthesis' in window) {{
-                window.speechSynthesis.cancel();
-                const utter = new SpeechSynthesisUtterance("{spoken_daily}");
-                utter.rate = 1.0;
-                utter.onend = () => {{
-                    window.dispatchEvent(new CustomEvent('zeno_speech_ended'));
-                }};
-                window.speechSynthesis.speak(utter);
-            }}
-        </script>
-        """, height=0)
-
-    # DISPLAY CHAT HISTORY
+    # ================= 3. DISPLAY CHAT HISTORY =================
     for msg in user_messages:
-        avatar = "🎓" if msg["role"] == "assistant" else "👤"
+        avatar = "⚡" if msg["role"] == "assistant" else "👤"
         with st.chat_message(msg["role"], avatar=avatar):
             if msg.get("image_url"):
                 st.image(msg["image_url"], caption="Generated Illustration")
             st.markdown(msg["content"])
 
-    # ================= 100% PARENT-INJECTED TOUCH TO SPEAK MIC =================
-    mic_injection_script = """
+    # ================= 4. CLASSIC TOUCH TO SPEAK MIC BUTTON =================
+    mic_html = """
+    <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin: 10px 0 6px 0;">
+        <button id="micBtn" type="button" style="
+            background: linear-gradient(45deg, #00f2fe, #ff007f);
+            border: 2px solid #ffffff;
+            color: #ffffff;
+            padding: 10px 26px;
+            border-radius: 26px;
+            font-weight: 800;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.55);
+            letter-spacing: 1px;
+            outline: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        ">🎙️ TOUCH TO SPEAK</button>
+        <span id="micStatus" style="color: #00ffcc; font-size: 13px; font-weight: 700;">Tap button & speak clearly</span>
+    </div>
+
     <script>
-        (function() {
-            const pDoc = window.parent.document;
-            if (pDoc.getElementById('zeno-floating-mic-box')) return;
+        const btn = document.getElementById('micBtn');
+        const status = document.getElementById('micStatus');
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-            const box = pDoc.createElement('div');
-            box.id = 'zeno-floating-mic-box';
-            box.style.position = 'fixed';
-            box.style.bottom = '85px';
-            box.style.left = '50%';
-            box.style.transform = 'translateX(-50%)';
-            box.style.zIndex = '999999';
-            box.style.display = 'flex';
-            box.style.alignItems = 'center';
-            box.style.gap = '12px';
-            box.style.background = 'rgba(8, 12, 36, 0.95)';
-            box.style.border = '2px solid #00f2fe';
-            box.style.borderRadius = '30px';
-            box.style.padding = '8px 22px';
-            box.style.boxShadow = '0 0 25px rgba(0, 242, 254, 0.6)';
-
-            const btn = pDoc.createElement('button');
-            btn.id = 'zeno-native-mic-btn';
-            btn.type = 'button';
-            btn.innerText = '🎙️ TOUCH TO SPEAK';
-            btn.style.background = 'linear-gradient(45deg, #00f2fe, #ff007f)';
-            btn.style.border = 'none';
-            btn.style.color = '#ffffff';
-            btn.style.padding = '10px 22px';
-            btn.style.borderRadius = '22px';
-            btn.style.fontWeight = 'bold';
-            btn.style.fontSize = '14px';
-            btn.style.cursor = 'pointer';
-            btn.style.letterSpacing = '1px';
-
-            const status = pDoc.createElement('span');
-            status.id = 'zeno-mic-status-txt';
-            status.innerText = 'Tap to speak English';
-            status.style.color = '#00ffcc';
-            status.style.fontSize = '13px';
-            status.style.fontWeight = 'bold';
-
-            box.appendChild(btn);
-            box.appendChild(status);
-            pDoc.body.appendChild(box);
-
-            const SpeechRec = window.parent.SpeechRecognition || window.parent.webkitSpeechRecognition;
-
-            if (!SpeechRec) {
-                status.innerText = 'Use Google Chrome on PC/Android';
-                btn.style.opacity = '0.5';
-                return;
-            }
-
+        if (!SpeechRec) {
+            status.innerText = "Please open this site in Google Chrome.";
+        } else {
             const rec = new SpeechRec();
             rec.continuous = false;
             rec.interimResults = false;
             rec.lang = 'en-US';
 
-            let isRecording = false;
+            let listening = false;
 
             btn.onclick = async () => {
-                if (isRecording) {
+                if (listening) {
                     rec.stop();
                     return;
                 }
                 try {
-                    if (window.parent.navigator.mediaDevices && window.parent.navigator.mediaDevices.getUserMedia) {
-                        const stream = await window.parent.navigator.mediaDevices.getUserMedia({ audio: true });
-                        stream.getTracks().forEach(t => t.stop());
-                    }
                     rec.start();
-                    isRecording = true;
-                    btn.innerText = '🛑 STOP LISTENING';
-                    btn.style.background = '#ff0055';
-                    status.innerText = 'Listening... Speak now!';
-                } catch (e) {
-                    status.innerText = 'Allow Mic permission in Chrome (🔒 lock icon)!';
-                    resetBtn();
+                    listening = true;
+                    status.innerText = "🔴 Listening... Speak clearly now!";
+                    btn.style.background = "#ff0055";
+                    btn.innerText = "🛑 STOP LISTENING";
+                } catch (err) {
+                    status.innerText = "Tap again to activate mic.";
+                    resetUi();
                 }
             };
 
             rec.onresult = (e) => {
-                const text = e.results[0][0].transcript;
-                status.innerText = 'Heard: ' + text;
+                const transcript = e.results[0][0].transcript;
+                status.innerText = "Heard: " + transcript;
 
-                const textarea = pDoc.querySelector('textarea[aria-label="Ask Zeno or type \'image: car\' to generate..."]') ||
-                                 pDoc.querySelector('textarea[data-testid="stChatInputTextArea"]');
+                try {
+                    const parentDoc = window.parent.document;
+                    const textarea = parentDoc.querySelector('textarea[aria-label="Ask Zeno anything or type \'image: car\' to generate..."]') ||
+                                     parentDoc.querySelector('textarea[data-testid="stChatInputTextArea"]');
 
-                if (textarea) {
-                    const proto = window.parent.HTMLTextAreaElement.prototype;
-                    const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value').set;
-                    nativeSetter.call(textarea, text);
-                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    if (textarea) {
+                        const proto = window.HTMLTextAreaElement.prototype;
+                        const nativeSet = Object.getOwnPropertyDescriptor(proto, "value").set;
+                        nativeSet.call(textarea, transcript);
+                        textarea.dispatchEvent(new Event('input', { bubbles: true }));
 
-                    setTimeout(() => {
-                        const sendBtn = pDoc.querySelector('button[data-testid="stChatInputSubmitButton"]') ||
-                                        pDoc.querySelector('button[kind="secondaryFormSubmit"]');
-                        if (sendBtn) {
-                            sendBtn.click();
-                        } else {
-                            textarea.dispatchEvent(new KeyboardEvent('keydown', {
-                                bubbles: true,
-                                cancelable: true,
-                                key: 'Enter',
-                                code: 'Enter',
-                                keyCode: 13
-                            }));
-                        }
-                    }, 350);
-                }
-                resetBtn();
+                        setTimeout(() => {
+                            const submitBtn = parentDoc.querySelector('button[data-testid="stChatInputSubmitButton"]') ||
+                                              parentDoc.querySelector('button[kind="secondaryFormSubmit"]');
+                            if (submitBtn) {
+                                submitBtn.click();
+                            } else {
+                                textarea.dispatchEvent(new KeyboardEvent('keydown', {
+                                    bubbles: true,
+                                    cancelable: true,
+                                    key: 'Enter',
+                                    code: 'Enter',
+                                    keyCode: 13
+                                }));
+                            }
+                        }, 400);
+                    }
+                } catch(e) {}
+                resetUi();
             };
 
             rec.onerror = (e) => {
-                if (e.error === 'not-allowed') {
-                    status.innerText = 'Mic blocked! Allow in Chrome settings';
-                } else if (e.error === 'no-speech') {
-                    status.innerText = 'No voice detected. Tap to retry';
-                } else {
-                    status.innerText = 'Tap to speak English';
-                }
-                resetBtn();
+                status.innerText = "Tap again to speak.";
+                resetUi();
             };
 
             rec.onend = () => {
-                resetBtn();
+                resetUi();
             };
 
-            function resetBtn() {
-                isRecording = false;
-                btn.innerText = '🎙️ TOUCH TO SPEAK';
-                btn.style.background = 'linear-gradient(45deg, #00f2fe, #ff007f)';
+            function resetUi() {
+                listening = false;
+                btn.style.background = "linear-gradient(45deg, #00f2fe, #ff007f)";
+                btn.innerText = "🎙️ TOUCH TO SPEAK";
             }
-        })();
+        }
     </script>
     """
-    st.components.v1.html(mic_injection_script, height=0)
+    st.components.v1.html(mic_html, height=55)
 
-    # CHAT INPUT BOX
-    user_prompt = st.chat_input("Ask Zeno or type 'image: car' to generate...")
+    # ================= 5. CHAT INPUT (ANSWERS & IMAGE GEN) =================
+    user_prompt = st.chat_input("Ask Zeno anything or type 'image: car' to generate...")
 
     if user_prompt:
         user_messages.append({"role": "user", "content": user_prompt})
@@ -641,16 +544,16 @@ else:
         with st.chat_message("user", avatar="👤"):
             st.markdown(user_prompt)
 
-        with st.chat_message("assistant", avatar="🎓"):
+        with st.chat_message("assistant", avatar="⚡"):
             lower_input = user_prompt.lower().strip()
-            
-            # AI Image Generation
+
+            # Instant AI Image Generation
             if lower_input.startswith("image:") or lower_input.startswith("generate image:"):
                 img_desc = user_prompt.split(":", 1)[1].strip()
                 encoded_desc = urllib.parse.quote(img_desc)
                 gen_image_url = f"https://image.pollinations.ai/prompt/{encoded_desc}?width=768&height=768&nologo=true"
-                
-                reply_txt = f"Here is the generated image for: {img_desc}"
+
+                reply_txt = f"Generated image for: **{img_desc}**"
                 st.image(gen_image_url, caption=f"Prompt: {img_desc}")
                 st.markdown(reply_txt)
 
@@ -659,47 +562,27 @@ else:
                     all_histories[current_user] = user_messages
                     save_data(HISTORY_FILE, all_histories)
 
-                tts_script = """
-                <script>
-                    if ('speechSynthesis' in window) {
-                        window.speechSynthesis.cancel();
-                        window.speechSynthesis.speak(new SpeechSynthesisUtterance("Here is the visual generated for you."));
-                    }
-                </script>
-                """
-                st.components.v1.html(tts_script, height=0)
-
-            # English Tutor Response
+            # Accurate Universal AI Answer Engine
             else:
-                raw_reply = call_groq_api_robust(user_prompt)
-                clean_reply = raw_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "").strip()
-                st.markdown(clean_reply)
+                with st.spinner("Zeno is thinking..."):
+                    raw_reply = call_groq_api_robust(user_prompt)
+                st.markdown(raw_reply)
 
-                user_messages.append({"role": "assistant", "content": clean_reply})
+                user_messages.append({"role": "assistant", "content": raw_reply})
                 if is_logged_in:
                     all_histories[current_user] = user_messages
                     save_data(HISTORY_FILE, all_histories)
 
-                spoken_text = clean_reply[:250].replace("\\", "")
-                tts_js = f"""
-                <script>
-                    if ('speechSynthesis' in window) {{
-                        window.speechSynthesis.cancel();
-                        const speakNow = () => {{
-                            const voices = window.speechSynthesis.getVoices();
-                            const utterance = new SpeechSynthesisUtterance("{spoken_text}");
-                            const targetVoice = voices.find(v => (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Female')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
-                            if (targetVoice) utterance.voice = targetVoice;
-                            utterance.pitch = 1.0;
-                            utterance.rate = 1.0;
-                            window.speechSynthesis.speak(utterance);
-                        }};
-                        if (window.speechSynthesis.getVoices().length > 0) {{
-                            speakNow();
-                        }} else {{
-                            window.speechSynthesis.onvoiceschanged = speakNow;
+                # Optional Clean Voice Playback for short replies
+                if len(raw_reply) < 300:
+                    clean_spoken = raw_reply.replace("*", "").replace("#", "").replace('"', '').replace("'", "")
+                    tts_js = f"""
+                    <script>
+                        if ('speechSynthesis' in window) {{
+                            window.speechSynthesis.cancel();
+                            const utter = new SpeechSynthesisUtterance("{clean_spoken}");
+                            window.speechSynthesis.speak(utter);
                         }}
-                    }}
-                </script>
-                """
-                st.components.v1.html(tts_js, height=0)
+                    </script>
+                    """
+                    st.components.v1.html(tts_js, height=0)
