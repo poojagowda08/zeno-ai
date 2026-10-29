@@ -142,7 +142,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SESSION STATE & 100% PERSISTENT LOGIN -----------------
+# ----------------- SESSION STATE & LOGIN PERSISTENCE -----------------
 query_user = st.query_params.get("user", "")
 
 if "logged_in_user" not in st.session_state:
@@ -153,40 +153,12 @@ if "guest_start_time" not in st.session_state:
 
 if "guest_messages" not in st.session_state:
     st.session_state.guest_messages = [
-        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything, speak using the unique mic below, or tap quick app shortcuts!"}
+        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything, upload images/files for explanation, or use quick app shortcuts below!"}
     ]
 
-# ----------------- GROQ API HELPER (TRANSCRIBE + CHAT) -----------------
+# ----------------- DYNAMIC MODEL GROQ CALLER -----------------
 raw_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
 API_KEYS = [k.strip().replace('"', '').replace("'", "") for k in raw_key.split(",") if k.strip()]
-
-def transcribe_audio_groq(audio_bytes):
-    if not API_KEYS:
-        return None
-    api_token = API_KEYS[0]
-    boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW"
-    url = "https://api.groq.com/openai/v1/audio/transcriptions"
-
-    body = bytearray()
-    body.extend(f"--{boundary}\r\n".encode("utf-8"))
-    body.extend(b'Content-Disposition: form-data; name="model"\r\n\r\nwhisper-large-v3-turbo\r\n')
-    body.extend(f"--{boundary}\r\n".encode("utf-8"))
-    body.extend(b'Content-Disposition: form-data; name="file"; filename="input_voice.wav"\r\n')
-    body.extend(b"Content-Type: audio/wav\r\n\r\n")
-    body.extend(audio_bytes)
-    body.extend(f"\r\n--{boundary}--\r\n".encode("utf-8"))
-
-    headers = {
-        "Authorization": f"Bearer {api_token}",
-        "Content-Type": f"multipart/form-data; boundary={boundary}"
-    }
-    req = urllib.request.Request(url, data=body, headers=headers, method="POST")
-    try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            return data.get("text", "")
-    except Exception:
-        return None
 
 def call_groq_api_robust(prompt):
     if not API_KEYS:
@@ -211,10 +183,25 @@ def call_groq_api_robust(prompt):
             "User-Agent": "Mozilla/5.0"
         }
 
-        models_to_try = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+        # Live model discovery
+        available_models = []
+        try:
+            req_models = urllib.request.Request("https://api.groq.com/openai/v1/models", headers=headers, method="GET")
+            with urllib.request.urlopen(req_models, timeout=8) as m_resp:
+                m_data = json.loads(m_resp.read().decode("utf-8"))
+                for m in m_data.get("data", []):
+                    m_id = m.get("id", "")
+                    if not any(x in m_id.lower() for x in ["whisper", "guard", "vision", "orpheus"]):
+                        available_models.append(m_id)
+        except Exception:
+            available_models = ["llama-3.3-70b-versatile", "llama3-8b-8192", "gemma2-9b-it", "mixtral-8x7b-32768"]
+
+        if not available_models:
+            available_models = ["llama-3.3-70b-versatile", "llama3-8b-8192"]
+
         chat_url = "https://api.groq.com/openai/v1/chat/completions"
 
-        for model_name in models_to_try:
+        for model_name in available_models:
             payload = {
                 "model": model_name,
                 "messages": [
@@ -243,14 +230,13 @@ def call_groq_api_robust(prompt):
 # ----------------- TIME & AUTH RULES -----------------
 is_logged_in = st.session_state.logged_in_user is not None
 
-# Ondu sala login aada mele yavathoo timer kelalla!
 if not is_logged_in:
     elapsed_seconds = int(time.time() - st.session_state.guest_start_time)
     time_limit_reached = (elapsed_seconds >= 60)
 else:
     time_limit_reached = False
 
-# ----------------- SIGN IN / SIGN UP (ONLY FOR GUEST ONCE) -----------------
+# ----------------- SIGN IN / SIGN UP (ONLY ONCE) -----------------
 if not is_logged_in and time_limit_reached:
     st.markdown("""
     <div class="glass-card" style="text-align: center; max-width: 520px; margin: 30px auto; border-color: #ff007f;">
@@ -330,7 +316,7 @@ else:
         current_user = st.session_state.logged_in_user
         if current_user not in all_histories:
             all_histories[current_user] = [
-                {"role": "assistant", "content": f"Hello {current_user}! Ask me anything or speak using the unique mic below."}
+                {"role": "assistant", "content": f"Hello {current_user}! Ask me anything in English or Kannada."}
             ]
         user_messages = all_histories[current_user]
 
@@ -472,48 +458,7 @@ else:
                 """
                 st.components.v1.html(tts_component, height=45)
 
-    # ================= 4. ULTRA-UNIQUE ANIMATED GLOWING MIC =================
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, rgba(13, 20, 50, 0.9), rgba(5, 8, 22, 0.9)); border: 2px solid #00f2fe; border-radius: 20px; padding: 14px 20px; margin-bottom: 10px; box-shadow: 0 0 25px rgba(0, 242, 254, 0.3);">
-        <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 20px;">🎙️</span>
-                <span style="color: #00ffcc; font-family: 'Orbitron'; font-weight: bold; font-size: 0.95rem; letter-spacing: 1px;">DIRECT VOICE INPUT (TAP RECORD -> SPEAK -> STOP)</span>
-            </div>
-            <span style="color: #ff007f; font-weight: 700; font-size: 0.85rem;">⚡ LIVE AUDIO CAPTURE</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    voice_file = st.audio_input("Record voice to speak with Zeno", key="live_audio_input", label_visibility="collapsed")
-
-    if voice_file is not None:
-        audio_bytes = voice_file.read()
-        with st.spinner("🎧 Transcribing your voice with Groq Whisper AI..."):
-            recognized_text = transcribe_audio_groq(audio_bytes)
-
-        if recognized_text and recognized_text.strip():
-            user_speech = recognized_text.strip()
-            user_messages.append({"role": "user", "content": f"🗣️ {user_speech}"})
-
-            lower_speech = user_speech.lower().strip()
-            if lower_speech.startswith("image:") or lower_speech.startswith("generate image:"):
-                img_desc = user_speech.split(":", 1)[1].strip()
-                encoded_desc = urllib.parse.quote(img_desc)
-                gen_image_url = f"https://image.pollinations.ai/prompt/{encoded_desc}?width=768&height=768&nologo=true"
-                reply_txt = f"Generated image for: **{img_desc}**"
-                user_messages.append({"role": "assistant", "content": reply_txt, "image_url": gen_image_url})
-            else:
-                with st.spinner("⚡ Zeno is thinking..."):
-                    bot_reply = call_groq_api_robust(user_speech)
-                    user_messages.append({"role": "assistant", "content": bot_reply})
-
-            if is_logged_in:
-                all_histories[current_user] = user_messages
-                save_data(HISTORY_FILE, all_histories)
-            st.rerun()
-
-    # ================= 5. CHAT TEXT INPUT =================
+    # ================= 4. CHAT TEXT INPUT =================
     user_prompt = st.chat_input("Ask Zeno anything or type 'image: car' to generate...")
 
     if user_prompt:
