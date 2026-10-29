@@ -47,7 +47,7 @@ def is_strong_password(password):
         return False, "Password must contain at least one special symbol (@, #, $, %, &, *, !)."
     return True, "Strong Password!"
 
-# ----------------- ULTRA-MODERN CYBERPUNK STYLING -----------------
+# ----------------- ULTRA-MODERN NEAT CYBERPUNK STYLING -----------------
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
@@ -135,7 +135,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SESSION STATE & LOGIN PERSISTENCE -----------------
+# ----------------- SESSION STATE & 100% PERSISTENT LOGIN -----------------
 query_user = st.query_params.get("user", "")
 
 if "logged_in_user" not in st.session_state:
@@ -146,7 +146,7 @@ if "guest_start_time" not in st.session_state:
 
 if "guest_messages" not in st.session_state:
     st.session_state.guest_messages = [
-        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything, upload photo/video/docs, take a camera snap, or tap quick app shortcuts!"}
+        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything, attach files/images, take camera snaps, or use the app shortcuts above!"}
     ]
 
 # ----------------- DYNAMIC MODEL GROQ CALLER -----------------
@@ -160,7 +160,7 @@ def call_groq_api_robust(prompt):
     system_instruction = (
         "You are Zeno AI, an ultra-smart, helpful AI assistant. "
         "Strict Language Rules:\n"
-        "1. If the user asks in Kannada (Kannada script or Tanglish/Kannada written using English letters), respond strictly in clear Kannada.\n"
+        "1. If the user asks in Kannada (Kannada script or Tanglish/Kannada written in English alphabet), respond strictly in clear Kannada.\n"
         "2. If the user asks in English or any other language, respond strictly in English. Never reply in Kannada unless asked in Kannada.\n"
         "3. Provide direct, accurate, and concise answers.\n"
         "4. If images, camera snaps, or documents are uploaded, explain their details clearly."
@@ -168,7 +168,7 @@ def call_groq_api_robust(prompt):
 
     last_error = ""
 
-    for api_token in API_KEYS:
+    for api_token in keys_list := API_KEYS:
         headers = {
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json",
@@ -176,7 +176,7 @@ def call_groq_api_robust(prompt):
             "User-Agent": "Mozilla/5.0"
         }
 
-        # Dynamic model fetch
+        # Dynamic model fetch to avoid model_not_found errors
         available_models = []
         try:
             req_models = urllib.request.Request("https://api.groq.com/openai/v1/models", headers=headers, method="GET")
@@ -229,7 +229,7 @@ if not is_logged_in:
 else:
     time_limit_reached = False
 
-# ----------------- SIGN IN / SIGN UP (ONLY ONCE) -----------------
+# ----------------- SIGN IN / SIGN UP OVERLAY -----------------
 if not is_logged_in and time_limit_reached:
     st.markdown("""
     <div class="glass-card" style="text-align: center; max-width: 520px; margin: 30px auto; border-color: #ff007f;">
@@ -413,35 +413,34 @@ else:
                 """
                 st.components.v1.html(tts_component, height=45)
 
-    # ================= BOTTOM SEND AREA: ATTACHMENTS + CAMERA + CHAT =================
+    # ================= BOTTOM SEND AREA: ATTACHMENTS + TOGGLE CAMERA + CHAT =================
     st.markdown('<div class="glass-card" style="border-color: #00f2fe; margin-top: 15px;">', unsafe_allow_html=True)
-    
-    # 1. Attachment controls directly above send input
-    col_file, col_cam = st.columns([1.5, 1])
+
+    col_file, col_cam_btn = st.columns([2, 1])
     with col_file:
         up_file = st.file_uploader(
             "📁 Attach Photo / Video / PDF / Audio",
             type=["png", "jpg", "jpeg", "mp4", "mov", "mkv", "mp3", "wav", "pdf", "txt"],
-            key="bottom_file_uploader"
+            key="bottom_file_uploader",
+            label_visibility="collapsed"
         )
-    with col_cam:
-        cam_snap = st.camera_input("📷 Take Direct Camera Snap", key="bottom_camera_snap")
+    with col_cam_btn:
+        with st.popover("📷 Open Camera Snap", use_container_width=True):
+            cam_snap = st.camera_input("Capture Photo", key="popup_cam_input")
 
-    # Show preview if selected
     if up_file:
-        st.info(f"Selected File: **{up_file.name}**")
+        st.info(f"Attached File: **{up_file.name}**")
         if up_file.type.startswith("image/"):
-            st.image(up_file, width=130)
+            st.image(up_file, width=120)
     if cam_snap:
-        st.info("Direct Camera Photo Captured!")
-        st.image(cam_snap, width=130)
+        st.info("Photo Captured via Camera!")
+        st.image(cam_snap, width=120)
 
-    # 2. Text input with Send Button
     col_input, col_send = st.columns([4.2, 0.8])
     with col_input:
         user_prompt = st.text_input(
             "Message",
-            placeholder="Ask Zeno anything, type 'image: car', or describe the attached file/snap...",
+            placeholder="Type your message, image prompt, or ask about attached file/snap...",
             key="bottom_chat_text",
             label_visibility="collapsed"
         )
@@ -459,19 +458,16 @@ else:
         if has_file or has_cam or has_text:
             final_user_msg = user_prompt.strip()
 
-            # Handle File attachment
             if has_file:
                 prefix = f"📎 [Attached: {up_file.name}] "
                 final_user_msg = prefix + (final_user_msg if final_user_msg else f"Please explain this uploaded {up_file.name} in detail.")
 
-            # Handle Camera snap
             if has_cam:
                 prefix = "📷 [Live Camera Snap] "
                 final_user_msg = prefix + (final_user_msg if final_user_msg else "Please explain this captured camera photo in detail.")
 
             user_messages.append({"role": "user", "content": final_user_msg})
 
-            # Check for AI image generation
             lower_input = final_user_msg.lower().strip()
             if lower_input.startswith("image:") or lower_input.startswith("generate image:"):
                 img_desc = final_user_msg.split(":", 1)[1].strip()
