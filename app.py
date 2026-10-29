@@ -168,7 +168,7 @@ def call_groq_api_robust(prompt):
 
     last_error = ""
 
-    for api_token in keys_list := API_KEYS:
+    for api_token in API_KEYS:
         headers = {
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json",
