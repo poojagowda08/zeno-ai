@@ -105,6 +105,30 @@ st.markdown("""
         box-shadow: 0 0 12px rgba(0, 242, 254, 0.3);
     }
 
+    /* 3D TACTILE SEND BUTTON */
+    div[data-testid="stFormSubmitButton"] > button {
+        background: linear-gradient(180deg, #00f2fe 0%, #0072ff 100%) !important;
+        color: #03081a !important;
+        font-family: 'Orbitron', sans-serif !important;
+        font-weight: 900 !important;
+        font-size: 1rem !important;
+        border: 1px solid #00f2fe !important;
+        border-radius: 14px !important;
+        padding: 10px 22px !important;
+        box-shadow: 0 6px 0 #003a80, 0 12px 20px rgba(0, 242, 254, 0.4) !important;
+        transform: translateY(0) !important;
+        transition: all 0.1s ease-in-out !important;
+    }
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background: linear-gradient(180deg, #00ffcc 0%, #00f2fe 100%) !important;
+        box-shadow: 0 7px 0 #003a80, 0 14px 24px rgba(0, 255, 204, 0.5) !important;
+        transform: translateY(-2px) !important;
+    }
+    div[data-testid="stFormSubmitButton"] > button:active {
+        box-shadow: 0 2px 0 #003a80, 0 4px 10px rgba(0, 242, 254, 0.3) !important;
+        transform: translateY(4px) !important;
+    }
+
     div.stButton > button {
         background: linear-gradient(135deg, #00f2fe 0%, #0072ff 100%) !important;
         color: #03081a !important;
@@ -113,12 +137,12 @@ st.markdown("""
         border: none !important;
         border-radius: 14px !important;
         padding: 10px 22px !important;
-        box-shadow: 0 6px 0 #0050aa, 0 12px 25px rgba(0, 242, 254, 0.4) !important;
+        box-shadow: 0 5px 0 #0050aa, 0 10px 20px rgba(0, 242, 254, 0.35) !important;
         transition: all 0.15s ease !important;
     }
     div.stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 8px 0 #0050aa, 0 16px 30px rgba(0, 255, 204, 0.6) !important;
+        box-shadow: 0 7px 0 #0050aa, 0 14px 26px rgba(0, 255, 204, 0.5) !important;
     }
 
     .audio-btn-speak {
@@ -159,9 +183,12 @@ if "guest_install_time" not in st.session_state:
 if "current_view" not in st.session_state:
     st.session_state.current_view = "home"
 
+if "home_modal_shown" not in st.session_state:
+    st.session_state.home_modal_shown = False
+
 if "guest_messages" not in st.session_state:
     st.session_state.guest_messages = [
-        {"role": "assistant", "content": "Welcome to Zeno AI. Ask any question in Kannada or English, upload PDF documents, or generate images!"}
+        {"role": "assistant", "content": "Welcome to Zeno AI. Ask any question in Kannada or English, or upload PDF documents from the sidebar!"}
     ]
 
 # 2-Day Trial Rule (48 Hours)
@@ -330,8 +357,32 @@ else:
             ]
         user_messages = all_histories[current_user]
 
-    # ================= 1. HOME SCREEN (PURE ENGLISH + UNIQUE ICONS) =================
+    # ================= 1. HOME SCREEN (POP-UP MODAL INCLUDED) =================
     if st.session_state.current_view == "home":
+        
+        # HOME PAGE MODAL POP-UP DIALOG
+        @st.dialog("⚡ Welcome to ZENO AI Core")
+        def show_welcome_popup():
+            st.markdown("""
+            <div style="text-align: center; margin-bottom: 15px;">
+                <div style="font-size: 2.5rem;">⚡</div>
+                <h3 style="font-family: 'Orbitron'; color: #00ffcc; margin: 5px 0;">Next-Gen Intelligence Active</h3>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Experience high-speed reasoning, deep PDF comprehension, and adaptive multilingual assistance.</p>
+            </div>
+            <div style="background: rgba(16, 24, 60, 0.8); border: 1px solid #00f2fe; border-radius: 14px; padding: 14px; margin-bottom: 15px;">
+                <p style="margin: 4px 0; color: #e2e8f0;">📄 <b>Autonomous PDF Synthesis:</b> Upload docs for instant summaries.</p>
+                <p style="margin: 4px 0; color: #e2e8f0;">🌐 <b>Bilingual Core:</b> Supports English and Kannada seamlessly.</p>
+                <p style="margin: 4px 0; color: #e2e8f0;">🔊 <b>Voice Output:</b> Read Aloud audio synthesizer ready.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🚀 Enter AI Chat Hub", use_container_width=True):
+                st.session_state.current_view = "chat"
+                st.rerun()
+
+        if not st.session_state.home_modal_shown:
+            st.session_state.home_modal_shown = True
+            show_welcome_popup()
+
         st.markdown("""
         <div style="text-align: center; margin-top: 25px;">
             <div style="font-size: 3.8rem; filter: drop-shadow(0 0 25px #00f2fe);">⚡</div>
@@ -358,13 +409,6 @@ else:
                 </div>
             </div>
             <div class="feature-item">
-                <div class="feature-icon-badge">🎨</div>
-                <div>
-                    <b style="color: #38bdf8;">Neural Image Synthesis</b><br/>
-                    <span style="color: #94a3b8; font-size: 0.95rem;">Type <code>image: your concept</code> to generate high-resolution visuals and artwork in real time.</span>
-                </div>
-            </div>
-            <div class="feature-item">
                 <div class="feature-icon-badge">🔊</div>
                 <div>
                     <b style="color: #38bdf8;">Dynamic Speech Synthesizer</b><br/>
@@ -380,7 +424,7 @@ else:
                 st.session_state.current_view = "chat"
                 st.rerun()
 
-    # ================= 2. CHAT HUB (CLEAN SINGLE-BAR & AUTO-CLEAR FORM) =================
+    # ================= 2. CHAT HUB =================
     else:
         with st.sidebar:
             st.markdown("""
@@ -391,7 +435,6 @@ else:
             </div>
             """.format(current_user), unsafe_allow_html=True)
 
-            # SINGLE RETURN TO HOME BUTTON
             if st.button("🏠 Return to Home", use_container_width=True):
                 st.session_state.current_view = "home"
                 st.rerun()
@@ -462,18 +505,16 @@ else:
                     st.session_state.current_view = "home"
                     st.rerun()
 
-        # Top Header (Single Clean Title)
+        # Top Header
         st.markdown('<div class="hero-title" style="font-size: 1.8rem; margin: 0 0 10px 0;">⚡ ZENO AI CHAT HUB</div>', unsafe_allow_html=True)
 
         # Chat History Display
         for msg in user_messages:
             avatar = "⚡" if msg["role"] == "assistant" else "👤"
             with st.chat_message(msg["role"], avatar=avatar):
-                if msg.get("image_url"):
-                    st.image(msg["image_url"], caption="Generated Visual")
                 st.markdown(msg["content"])
 
-                # REDESIGNED AUDIO BUTTONS
+                # AUDIO CONTROLS
                 if msg["role"] == "assistant" and len(msg["content"].strip()) > 0:
                     clean_speech = re.sub(r'[*#_`]', '', msg["content"][:280]).replace('"', '').replace("'", "").replace('\n', ' ')
                     encoded_speech = urllib.parse.quote(clean_speech)
@@ -496,13 +537,13 @@ else:
                     """
                     st.components.v1.html(tts_ui, height=45)
 
-        # AUTO-CLEAR PROMPT FORM
+        # 3D TACTILE SEND FORM WITH AUTO-CLEAR
         with st.form("chat_input_form", clear_on_submit=True):
             col_t, col_s = st.columns([4.2, 0.8])
             with col_t:
                 user_input = st.text_input(
                     "Message",
-                    placeholder="Ask Zeno or type 'image: futuristic vehicle'...",
+                    placeholder="Ask Zeno anything...",
                     key="chat_prompt_input_field",
                     label_visibility="collapsed"
                 )
@@ -513,18 +554,9 @@ else:
             user_text = user_input.strip()
             user_messages.append({"role": "user", "content": user_text})
 
-            lower_val = user_text.lower()
-            if lower_val.startswith("image:") or lower_val.startswith("generate image:"):
-                img_desc = user_text.split(":", 1)[1].strip()
-                encoded_desc = urllib.parse.quote(img_desc)
-                gen_image_url = f"https://image.pollinations.ai/prompt/{encoded_desc}?width=768&height=768&nologo=true"
-
-                reply_txt = f"Generated visual for: **{img_desc}**"
-                user_messages.append({"role": "assistant", "content": reply_txt, "image_url": gen_image_url})
-            else:
-                with st.spinner("⚡ Zeno is thinking..."):
-                    raw_reply = call_groq_api_robust(user_text)
-                user_messages.append({"role": "assistant", "content": raw_reply})
+            with st.spinner("⚡ Zeno is thinking..."):
+                raw_reply = call_groq_api_robust(user_text)
+            user_messages.append({"role": "assistant", "content": raw_reply})
 
             if is_logged_in:
                 all_histories[current_user] = user_messages
