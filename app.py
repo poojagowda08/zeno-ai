@@ -39,45 +39,70 @@ def save_data(filename, data):
 
 def is_strong_password(password):
     if len(password) < 8:
-        return False, "Password minimum 8 characters erbeku."
+        return False, "Password must be at least 8 characters long."
     if not re.search(r"\d", password):
-        return False, "Password nalli ondhu number (0-9) erbeku."
+        return False, "Password must contain at least one number (0-9)."
     if not re.search(r"[@#$%^&*!_\-+=]", password):
-        return False, "Password nalli ondhu special symbol erbeku."
+        return False, "Password must contain at least one special symbol."
     return True, "Strong Password!"
 
-# ----------------- STYLING -----------------
+# ----------------- CLEAN MODERN 3D STYLING -----------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@400;500;600;700&display=swap');
 
     .stApp {
         background: radial-gradient(circle at 50% 0%, #0d1238 0%, #060919 60%, #020308 100%);
-        color: #e0f7fa;
-        font-family: 'Rajdhani', sans-serif;
+        color: #e2e8f0;
+        font-family: 'Inter', sans-serif;
     }
 
     .hero-title {
         font-family: 'Orbitron', sans-serif;
-        font-size: 2.8rem;
+        font-size: 3rem;
         font-weight: 900;
         letter-spacing: 3px;
         background: linear-gradient(90deg, #00f2fe 0%, #00ffcc 50%, #ff007f 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 30px rgba(0, 242, 254, 0.5);
+        text-shadow: 0 0 35px rgba(0, 242, 254, 0.5);
         margin: 5px 0;
+    }
+
+    .hero-subtitle {
+        color: #94a3b8;
+        font-size: 1.1rem;
+        font-weight: 500;
+        letter-spacing: 1px;
+        margin-bottom: 25px;
     }
 
     .main-box-3d {
         background: linear-gradient(145deg, rgba(16, 24, 60, 0.9), rgba(7, 12, 35, 0.95));
-        border: 2px solid rgba(0, 242, 254, 0.5);
+        border: 1.5px solid rgba(0, 242, 254, 0.4);
         border-radius: 24px;
-        padding: 30px 25px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(0, 242, 254, 0.25);
-        max-width: 800px;
+        padding: 30px 28px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(0, 242, 254, 0.2);
+        max-width: 850px;
         margin: 20px auto;
         text-align: left;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .feature-icon-badge {
+        background: rgba(0, 242, 254, 0.15);
+        border: 1px solid #00f2fe;
+        color: #00ffcc;
+        border-radius: 12px;
+        padding: 8px 12px;
+        font-size: 1.2rem;
+        box-shadow: 0 0 12px rgba(0, 242, 254, 0.3);
     }
 
     div.stButton > button {
@@ -96,16 +121,28 @@ st.markdown("""
         box-shadow: 0 8px 0 #0050aa, 0 16px 30px rgba(0, 255, 204, 0.6) !important;
     }
 
-    .speaker-btn-3d {
-        background: linear-gradient(135deg, #00ffcc, #0072ff);
+    .audio-btn-speak {
+        background: linear-gradient(135deg, #00f2fe, #00ffcc);
         border: none;
         color: #03081a;
-        font-weight: 800;
+        font-weight: 700;
         padding: 6px 14px;
-        border-radius: 12px;
+        border-radius: 10px;
         cursor: pointer;
         font-size: 13px;
-        box-shadow: 0 3px 0 #004ba0, 0 6px 15px rgba(0, 255, 204, 0.3);
+        box-shadow: 0 2px 8px rgba(0, 255, 204, 0.4);
+    }
+
+    .audio-btn-stop {
+        background: linear-gradient(135deg, #ff007f, #f43f5e);
+        border: none;
+        color: #ffffff;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 13px;
+        box-shadow: 0 2px 8px rgba(255, 0, 127, 0.4);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -127,7 +164,7 @@ if "guest_messages" not in st.session_state:
         {"role": "assistant", "content": "Welcome to Zeno AI. Ask any question in Kannada or English, upload PDF documents, or generate images!"}
     ]
 
-# 2-Day Trial
+# 2-Day Trial Rule (48 Hours)
 TWO_DAYS_IN_SECONDS = 2 * 24 * 60 * 60
 is_logged_in = st.session_state.logged_in_user is not None
 
@@ -137,7 +174,7 @@ if not is_logged_in:
 else:
     trial_expired = False
 
-# Hide Sidebar on Home Screen via CSS
+# Hide Sidebar completely on Home screen
 if st.session_state.current_view == "home":
     st.markdown("""
     <style>
@@ -152,7 +189,7 @@ API_KEYS = [k.strip().replace('"', '').replace("'", "") for k in raw_key.split("
 
 def call_groq_api_robust(prompt):
     if not API_KEYS:
-        return "GROQ_API_KEY Missing! Streamlit Secrets nalli GROQ_API_KEY add maadi."
+        return "GROQ_API_KEY Missing! Please add GROQ_API_KEY to Streamlit Secrets."
 
     system_instruction = (
         "You are Zeno AI, an ultra-advanced intelligent AI core. "
@@ -160,7 +197,7 @@ def call_groq_api_robust(prompt):
         "1. If user asks in Kannada (Kannada script or Tanglish), respond strictly in clear Kannada.\n"
         "2. If user asks in English or any other language, respond strictly in English.\n"
         "3. Provide direct, accurate, structured, and insightful answers.\n"
-        "4. When PDF text is given, thoroughly explain the document, extract key facts, summarize chapters, and give clear takeaways directly without saying you cannot read it."
+        "4. When PDF text is given, thoroughly explain the document, extract key facts, summarize chapters, and give clear takeaways directly."
     )
 
     last_error = ""
@@ -224,7 +261,7 @@ if not is_logged_in and trial_expired:
         <div style="color: #ff007f; font-family: 'Orbitron'; font-weight: 800; font-size: 1.2rem;">2-DAY FREE TRIAL COMPLETED</div>
         <div class="hero-title" style="font-size: 2rem;">ZENO AI</div>
         <p style="color: #e0f7fa; font-size: 1rem; margin-top: 6px;">
-            Nimma 2 dinada free trial mugidide. Sign In athava Sign Up maadi lifelong access unlock maadi!
+            Your 2-day trial has concluded. Sign In or Create an Account to unlock permanent lifetime cloud sync!
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -261,11 +298,11 @@ if not is_logged_in and trial_expired:
         if st.button("✨ Create Account & Proceed", use_container_width=True):
             is_valid, msg = is_strong_password(new_pwd)
             if not new_id or not new_pwd:
-                st.warning("Details fill maadi.")
+                st.warning("Please fill all details.")
             elif not is_valid:
                 st.error(msg)
             elif new_pwd != new_pwd_confirm:
-                st.error("Passwords match aagthilla!")
+                st.error("Passwords do not match!")
             elif new_id in users_db:
                 st.error("Username already registered.")
             else:
@@ -289,43 +326,62 @@ else:
         current_user = st.session_state.logged_in_user
         if current_user not in all_histories:
             all_histories[current_user] = [
-                {"role": "assistant", "content": f"Hello {current_user}! Ask me anything or upload PDF files from sidebar."}
+                {"role": "assistant", "content": f"Hello {current_user}! Ask me anything or upload PDF files from the sidebar."}
             ]
         user_messages = all_histories[current_user]
 
-    # ================= 1. HOME SCREEN (SIDEBAR COMPLETE OFF) =================
+    # ================= 1. HOME SCREEN (PURE ENGLISH + UNIQUE ICONS) =================
     if st.session_state.current_view == "home":
         st.markdown("""
         <div style="text-align: center; margin-top: 25px;">
             <div style="font-size: 3.8rem; filter: drop-shadow(0 0 25px #00f2fe);">⚡</div>
             <div class="hero-title">ZENO AI</div>
-            <div style="font-size: 1.1rem; color: #80deea; font-weight: 600;">SMART MULTI-PURPOSE INTELLIGENCE</div>
+            <div class="hero-subtitle">NEXT-GENERATION ARTIFICIAL INTELLIGENCE CORE</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Single Box Explaining Everything Zeno Does
         st.markdown("""
         <div class="main-box-3d">
-            <h3 style="font-family: 'Orbitron'; color: #00ffcc; margin-top: 0;">⚡ Zeno AI Enella Maaduththe?</h3>
-            <ul style="font-size: 1.05rem; line-height: 1.8; color: #e0f7fa;">
-                <li><b>📄 Direct PDF Analysis:</b> Yaavude PDF notes, syllabus, athava documents upload maadidre poorthi scan maadi extract maaduththe[span_2](start_span)[span_2](end_span).</li>
-                <li><b>🗣️ Bilingual Intelligence:</b> User Kannada dalli kelidre Kannada dalli, English nalli kelidre English nalli clear factual uthira koduththe.</li>
-                <li><b>🎨 Instant Image Generator:</b> <code>image: your prompt</code> antha type maadidaga real-time HD AI visuals generate maaduththe.</li>
-                <li><b>🔊 Voice Read Aloud:</b> AI kotto answer na hands-free aagi keloke Read Aloud audio support ide.</li>
-                <li><b>⚡ Zero Clutter:</b> Camera athava unnecessary features illade, fast mathu accurate search engine.</li>
-            </ul>
+            <h3 style="font-family: 'Orbitron'; color: #00ffcc; margin-top: 0; margin-bottom: 20px;">⚡ What Zeno AI Delivers</h3>
+            <div class="feature-item">
+                <div class="feature-icon-badge">📄</div>
+                <div>
+                    <b style="color: #38bdf8;">Autonomous PDF Synthesis</b><br/>
+                    <span style="color: #94a3b8; font-size: 0.95rem;">Upload study notes, research papers, or syllabus documents for comprehensive textual extraction and summary.</span>
+                </div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon-badge">🌐</div>
+                <div>
+                    <b style="color: #38bdf8;">Adaptive Bilingual Engine</b><br/>
+                    <span style="color: #94a3b8; font-size: 0.95rem;">Responds accurately in Kannada when queried in Kannada, and delivers fluent responses strictly in English for all general requests.</span>
+                </div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon-badge">🎨</div>
+                <div>
+                    <b style="color: #38bdf8;">Neural Image Synthesis</b><br/>
+                    <span style="color: #94a3b8; font-size: 0.95rem;">Type <code>image: your concept</code> to generate high-resolution visuals and artwork in real time.</span>
+                </div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon-badge">🔊</div>
+                <div>
+                    <b style="color: #38bdf8;">Dynamic Speech Synthesizer</b><br/>
+                    <span style="color: #94a3b8; font-size: 0.95rem;">Listen to AI responses hands-free with high-fidelity Read Aloud and instant Stop playback controls.</span>
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
         col_h1, col_h2, col_h3 = st.columns([1, 2, 1])
         with col_h2:
-            if st.button("💬 Go to Chat with AI", use_container_width=True):
+            if st.button("💬 Launch AI Chat Hub", use_container_width=True):
                 st.session_state.current_view = "chat"
                 st.rerun()
 
-    # ================= 2. CHAT HUB (SIDEBAR ON + GO TO HOME BUTTON) =================
+    # ================= 2. CHAT HUB (CLEAN SINGLE-BAR & AUTO-CLEAR FORM) =================
     else:
-        # Sidebar mathra Chat view nalli open iraththe
         with st.sidebar:
             st.markdown("""
             <div style="text-align: center; padding: 10px 0;">
@@ -335,13 +391,13 @@ else:
             </div>
             """.format(current_user), unsafe_allow_html=True)
 
-            # GO TO HOME PAGE BUTTON
-            if st.button("🏠 Go to Home Page", use_container_width=True):
+            # SINGLE RETURN TO HOME BUTTON
+            if st.button("🏠 Return to Home", use_container_width=True):
                 st.session_state.current_view = "home"
                 st.rerun()
 
             st.markdown("---")
-            # PDF UPLOAD HUB (Direct Text Extraction)
+            # PDF UPLOAD HUB
             st.markdown("### 📄 PDF Document Hub")
             pdf_file = st.file_uploader(
                 "Upload PDF",
@@ -356,15 +412,14 @@ else:
             if pdf_file is not None and pdf_file.name != st.session_state.last_processed_pdf:
                 st.session_state.last_processed_pdf = pdf_file.name
                 
-                # PDF inda text direct extract maaduvudu
                 try:
                     reader = PdfReader(pdf_file)
                     extracted_text = ""
-                    for page in reader.pages[:10]:  # First 10 pages for speed
+                    for page in reader.pages[:10]:
                         extracted_text += page.extract_text() or ""
                     
                     if not extracted_text.strip():
-                        extracted_text = "Note: PDF appears to contain scanned images or no direct selectable text."
+                        extracted_text = "Note: PDF contains scanned images or no selectable text."
                 except Exception as e:
                     extracted_text = f"Error reading PDF content: {str(e)}"
 
@@ -377,7 +432,7 @@ else:
 
                 user_messages.append({"role": "user", "content": f"📄 [Uploaded Document: {pdf_file.name}] Please explain this PDF in detail."})
 
-                with st.spinner("⚡ Zeno is extracting and reading the PDF text..."):
+                with st.spinner("⚡ Extracting and analyzing PDF document..."):
                     pdf_reply = call_groq_api_robust(pdf_prompt)
 
                 user_messages.append({"role": "assistant", "content": pdf_reply})
@@ -388,7 +443,7 @@ else:
                 st.rerun()
 
             st.markdown("---")
-            st.markdown("### 📁 Saved Chats")
+            st.markdown("### 📁 Saved Threads")
             user_queries = [m["content"] for m in user_messages if m["role"] == "user"]
             if not user_queries:
                 st.caption("No history yet.")
@@ -407,15 +462,8 @@ else:
                     st.session_state.current_view = "home"
                     st.rerun()
 
-        # Top Header in Chat
-        c_head1, c_head2 = st.columns([3, 1])
-        with c_head1:
-            st.markdown('<div class="hero-title" style="font-size: 1.8rem; margin: 0;">⚡ ZENO AI CHAT</div>', unsafe_allow_html=True)
-            st.caption("Ask questions, upload PDFs in sidebar, or generate images.")
-        with c_head2:
-            if st.button("🏠 Home Page", use_container_width=True):
-                st.session_state.current_view = "home"
-                st.rerun()
+        # Top Header (Single Clean Title)
+        st.markdown('<div class="hero-title" style="font-size: 1.8rem; margin: 0 0 10px 0;">⚡ ZENO AI CHAT HUB</div>', unsafe_allow_html=True)
 
         # Chat History Display
         for msg in user_messages:
@@ -425,13 +473,14 @@ else:
                     st.image(msg["image_url"], caption="Generated Visual")
                 st.markdown(msg["content"])
 
+                # REDESIGNED AUDIO BUTTONS
                 if msg["role"] == "assistant" and len(msg["content"].strip()) > 0:
                     clean_speech = re.sub(r'[*#_`]', '', msg["content"][:280]).replace('"', '').replace("'", "").replace('\n', ' ')
                     encoded_speech = urllib.parse.quote(clean_speech)
                     tts_ui = f"""
-                    <div style="margin-top: 6px; display: flex; gap: 8px;">
-                        <button class="speaker-btn-3d" onclick="speakText('{encoded_speech}')">🔊 Read Aloud</button>
-                        <button class="speaker-btn-3d" style="background: rgba(255, 0, 127, 0.4); color: #fff;" onclick="window.speechSynthesis.cancel()">⏹ Stop</button>
+                    <div style="margin-top: 8px; display: flex; gap: 10px;">
+                        <button class="audio-btn-speak" onclick="speakText('{encoded_speech}')">🔊 Read Aloud</button>
+                        <button class="audio-btn-stop" onclick="window.speechSynthesis.cancel()">⏹ Stop</button>
                     </div>
                     <script>
                         function speakText(enc) {{
@@ -445,21 +494,20 @@ else:
                         }}
                     </script>
                     """
-                    st.components.v1.html(tts_ui, height=40)
+                    st.components.v1.html(tts_ui, height=45)
 
-        # Chat Input Box
-        st.markdown('<div style="background: rgba(13, 20, 50, 0.85); border: 1.5px solid #00f2fe; border-radius: 18px; padding: 10px 14px; margin-top: 15px;">', unsafe_allow_html=True)
-        col_t, col_s = st.columns([4.2, 0.8])
-        with col_t:
-            user_input = st.text_input(
-                "Message",
-                placeholder="Ask Zeno in Kannada/English or type 'image: car'...",
-                key="chat_prompt_input",
-                label_visibility="collapsed"
-            )
-        with col_s:
-            send_clicked = st.button("🚀 Send", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # AUTO-CLEAR PROMPT FORM
+        with st.form("chat_input_form", clear_on_submit=True):
+            col_t, col_s = st.columns([4.2, 0.8])
+            with col_t:
+                user_input = st.text_input(
+                    "Message",
+                    placeholder="Ask Zeno or type 'image: futuristic vehicle'...",
+                    key="chat_prompt_input_field",
+                    label_visibility="collapsed"
+                )
+            with col_s:
+                send_clicked = st.form_submit_button("🚀 Send", use_container_width=True)
 
         if send_clicked and user_input.strip():
             user_text = user_input.strip()
