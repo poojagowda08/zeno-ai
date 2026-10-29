@@ -11,7 +11,7 @@ from PIL import Image
 
 # ----------------- PAGE CONFIG -----------------
 st.set_page_config(
-    page_title="ZENO AI | Smart Super Assistant",
+    page_title="ZENO AI",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -40,102 +40,90 @@ def save_data(filename, data):
 # ----------------- PASSWORD STRENGTH CHECK -----------------
 def is_strong_password(password):
     if len(password) < 8:
-        return False, "Password must be at least 8 characters long."
+        return False, "Password minimum 8 characters erbeku."
     if not re.search(r"\d", password):
-        return False, "Password must contain at least one number (0-9)."
+        return False, "Password nalli ondhu number (0-9) erbeku."
     if not re.search(r"[@#$%^&*!_\-+=]", password):
-        return False, "Password must contain at least one special symbol (@, #, $, %, &, *, !)."
+        return False, "Password nalli ondhu special symbol erbeku."
     return True, "Strong Password!"
 
-# ----------------- ULTRA-MODERN NEAT CYBERPUNK STYLING -----------------
+# ----------------- PERPLEXITY STYLE MINIMAL CLEAN CSS -----------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@700;900&display=swap');
 
     .stApp {
-        background: radial-gradient(circle at 50% 5%, #0d1238 0%, #050816 55%, #010207 100%);
-        color: #e0f7fa;
-        font-family: 'Rajdhani', sans-serif;
+        background-color: #0b0f17;
+        color: #e2e8f0;
+        font-family: 'Inter', sans-serif;
     }
 
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #06091e 0%, #03040a 100%) !important;
-        border-right: 2px solid rgba(0, 242, 254, 0.45) !important;
-        box-shadow: 10px 0 30px rgba(0, 242, 254, 0.1);
+        background-color: #080c14 !important;
+        border-right: 1px solid #1e293b !important;
     }
 
-    .zeno-brand {
+    .zeno-title {
         font-family: 'Orbitron', sans-serif;
-        font-size: 2.3rem;
+        font-size: 2.2rem;
         font-weight: 900;
-        letter-spacing: 3px;
-        background: linear-gradient(90deg, #00f2fe 0%, #4facfe 30%, #00ffcc 70%, #ff007f 100%);
+        letter-spacing: 1.5px;
+        background: linear-gradient(90deg, #00f2fe 0%, #4facfe 50%, #00ffcc 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        text-shadow: 0 0 25px rgba(0, 242, 254, 0.5);
-        margin-bottom: 2px;
+        text-align: center;
+        margin-top: 10px;
+        margin-bottom: 4px;
     }
 
-    .glass-card {
-        background: rgba(12, 18, 48, 0.75);
-        border: 1.5px solid rgba(0, 242, 254, 0.35);
-        box-shadow: 0 8px 32px 0 rgba(0, 242, 254, 0.15);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border-radius: 18px;
+    .zeno-subtitle {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 0.95rem;
+        margin-bottom: 25px;
+    }
+
+    .perplexity-card {
+        background: #111827;
+        border: 1px solid #1f293d;
+        border-radius: 14px;
         padding: 16px 20px;
         margin-bottom: 14px;
     }
 
-    .app-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: linear-gradient(135deg, rgba(0, 242, 254, 0.15), rgba(255, 0, 127, 0.2));
-        border: 1.5px solid #00f2fe;
-        color: #ffffff !important;
-        text-decoration: none;
-        padding: 8px 16px;
-        border-radius: 14px;
-        font-size: 0.92rem;
-        font-weight: 700;
-        margin: 4px;
-        box-shadow: 0 0 14px rgba(0, 242, 254, 0.25);
-        transition: all 0.25s ease-in-out;
-    }
-    .app-btn:hover {
-        transform: translateY(-3px) scale(1.03);
-        box-shadow: 0 0 24px #00ffcc;
-        border-color: #00ffcc;
-    }
-
-    .storage-badge {
-        background: rgba(0, 242, 254, 0.1);
-        border: 1px solid #00f2fe;
-        color: #80deea;
-        padding: 6px 14px;
-        border-radius: 14px;
-        font-size: 0.88rem;
-        font-weight: 600;
+    .quick-link {
         display: inline-block;
-        margin-bottom: 8px;
+        background: #1e293b;
+        color: #38bdf8 !important;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        margin: 3px;
+        border: 1px solid #334155;
+        transition: all 0.2s ease;
+    }
+    .quick-link:hover {
+        background: #0284c7;
+        color: #ffffff !important;
+        border-color: #38bdf8;
     }
 
-    .speaker-btn-ui {
-        background: linear-gradient(135deg, #00ffcc 0%, #0072ff 100%);
-        border: none;
-        color: #040817;
-        font-weight: 800;
-        padding: 7px 16px;
-        border-radius: 16px;
+    .speaker-btn {
+        background: #1e293b;
+        color: #38bdf8;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 600;
         cursor: pointer;
-        font-size: 13px;
-        box-shadow: 0 0 12px rgba(0, 255, 204, 0.4);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- SESSION STATE & 100% PERSISTENT LOGIN -----------------
+# ----------------- SESSION STATE & LOGIN -----------------
 query_user = st.query_params.get("user", "")
 
 if "logged_in_user" not in st.session_state:
@@ -146,24 +134,24 @@ if "guest_start_time" not in st.session_state:
 
 if "guest_messages" not in st.session_state:
     st.session_state.guest_messages = [
-        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything, attach files/images, take camera snaps, or use the app shortcuts above!"}
+        {"role": "assistant", "content": "Hello! I am Zeno AI. Ask me anything, or upload any file/camera snap from the left sidebar to get instant automatic explanation."}
     ]
 
-# ----------------- DYNAMIC MODEL GROQ CALLER -----------------
+# ----------------- GROQ API CALLER -----------------
 raw_key = st.secrets.get("GROQ_API_KEY", "") or os.environ.get("GROQ_API_KEY", "")
 API_KEYS = [k.strip().replace('"', '').replace("'", "") for k in raw_key.split(",") if k.strip()]
 
 def call_groq_api_robust(prompt):
     if not API_KEYS:
-        return "GROQ_API_KEY Missing! Please add GROQ_API_KEY to Streamlit Secrets."
+        return "GROQ_API_KEY Missing! Streamlit Secrets nalli GROQ_API_KEY add maadi."
 
     system_instruction = (
-        "You are Zeno AI, an ultra-smart, helpful AI assistant. "
-        "Strict Language Rules:\n"
-        "1. If the user asks in Kannada (Kannada script or Tanglish/Kannada written in English alphabet), respond strictly in clear Kannada.\n"
-        "2. If the user asks in English or any other language, respond strictly in English. Never reply in Kannada unless asked in Kannada.\n"
-        "3. Provide direct, accurate, and concise answers.\n"
-        "4. If images, camera snaps, or documents are uploaded, explain their details clearly."
+        "You are Zeno AI, a clean, highly accurate, Perplexity-style intelligence engine. "
+        "Language Rules:\n"
+        "1. If user asks in Kannada (or Tanglish), respond strictly in clear Kannada.\n"
+        "2. If user asks in English or any other language, respond strictly in English.\n"
+        "3. Provide direct, factual, structured, and comprehensive answers without unnecessary fillers.\n"
+        "4. When an image, file, or camera snap is uploaded, immediately describe all visual details, what it is, context, meaning, and key points thoroughly without waiting for extra questions."
     )
 
     last_error = ""
@@ -176,7 +164,6 @@ def call_groq_api_robust(prompt):
             "User-Agent": "Mozilla/5.0"
         }
 
-        # Dynamic model fetch to avoid model_not_found errors
         available_models = []
         try:
             req_models = urllib.request.Request("https://api.groq.com/openai/v1/models", headers=headers, method="GET")
@@ -187,7 +174,7 @@ def call_groq_api_robust(prompt):
                     if not any(x in m_id.lower() for x in ["whisper", "guard", "vision", "orpheus"]):
                         available_models.append(m_id)
         except Exception:
-            available_models = ["llama-3.3-70b-versatile", "llama3-8b-8192", "gemma2-9b-it", "mixtral-8x7b-32768"]
+            available_models = ["llama-3.3-70b-versatile", "llama3-8b-8192", "gemma2-9b-it"]
 
         if not available_models:
             available_models = ["llama-3.3-70b-versatile", "llama3-8b-8192"]
@@ -201,7 +188,7 @@ def call_groq_api_robust(prompt):
                     {"role": "system", "content": system_instruction},
                     {"role": "user", "content": prompt}
                 ],
-                "temperature": 0.3
+                "temperature": 0.2
             }
             body_data = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(chat_url, data=body_data, headers=headers, method="POST")
@@ -220,7 +207,7 @@ def call_groq_api_robust(prompt):
 
     return f"API Issue: {last_error}"
 
-# ----------------- TIME & AUTH RULES -----------------
+# ----------------- TIME & AUTH CHECK -----------------
 is_logged_in = st.session_state.logged_in_user is not None
 
 if not is_logged_in:
@@ -229,63 +216,52 @@ if not is_logged_in:
 else:
     time_limit_reached = False
 
-# ----------------- SIGN IN / SIGN UP OVERLAY -----------------
+# ----------------- SIGN IN / SIGN UP (ONE TIME) -----------------
 if not is_logged_in and time_limit_reached:
     st.markdown("""
-    <div class="glass-card" style="text-align: center; max-width: 520px; margin: 30px auto; border-color: #ff007f;">
-        <div style="color: #ff007f; font-weight: 800; letter-spacing: 2px;">⚠️ 1-MINUTE FREE TRIAL COMPLETED</div>
-        <div class="zeno-brand">⚡ ZENO AI ⚡</div>
-        <p style="color: #e0f7fa; font-size: 1.05rem; margin-top: 6px;">
-            Please <b>Sign In</b> or <b>Create an Account</b> once. After this, your chat is permanently saved and login is never asked again!
-        </p>
+    <div class="perplexity-card" style="max-width: 460px; margin: 40px auto; text-align: center;">
+        <div style="color: #38bdf8; font-weight: 700; font-size: 0.9rem; letter-spacing: 1px;">AUTHENTICATION REQUIRED</div>
+        <div class="zeno-title" style="font-size: 1.8rem;">⚡ ZENO AI ⚡</div>
+        <p style="color: #94a3b8; font-size: 0.9rem;">Sign in once to keep your history persistent permanently.</p>
     </div>
     """, unsafe_allow_html=True)
 
-    auth_tab1, auth_tab2 = st.tabs(["🔑 Sign In", "📝 Create Account (Sign Up)"])
+    auth_tab1, auth_tab2 = st.tabs(["Sign In", "Create Account"])
     users_db = load_data(USERS_FILE, {})
 
     with auth_tab1:
-        st.subheader("Sign In Once")
         login_id = st.text_input("Username", key="login_id")
         login_pwd = st.text_input("Password", type="password", key="login_pwd")
-
-        if st.button("🚀 Sign In & Continue Forever", use_container_width=True):
+        if st.button("Sign In & Continue", use_container_width=True):
             user_record = users_db.get(login_id)
-            if user_record:
-                saved_pwd = user_record["password"] if isinstance(user_record, dict) else user_record
-                if saved_pwd == login_pwd:
-                    st.session_state.logged_in_user = login_id
-                    st.query_params["user"] = login_id
+            if user_record and (user_record.get("password") == login_pwd if isinstance(user_record, dict) else user_record == login_pwd):
+                st.session_state.logged_in_user = login_id
+                st.query_params["user"] = login_id
 
-                    all_histories = load_data(HISTORY_FILE, {})
-                    if login_id not in all_histories:
-                        all_histories[login_id] = st.session_state.guest_messages
-                    else:
-                        all_histories[login_id].extend(st.session_state.guest_messages[1:])
-                    save_data(HISTORY_FILE, all_histories)
-                    st.rerun()
+                all_histories = load_data(HISTORY_FILE, {})
+                if login_id not in all_histories:
+                    all_histories[login_id] = st.session_state.guest_messages
                 else:
-                    st.error("Invalid password!")
+                    all_histories[login_id].extend(st.session_state.guest_messages[1:])
+                save_data(HISTORY_FILE, all_histories)
+                st.rerun()
             else:
-                st.error("User not found. Please Sign Up.")
+                st.error("Invalid credentials!")
 
     with auth_tab2:
-        st.subheader("New User Registration")
-        st.info("Password rules: Minimum 8 characters, at least 1 number, and 1 special symbol (@, #, $, %).")
         new_id = st.text_input("Choose Username", key="reg_id")
         new_pwd = st.text_input("Create Password", type="password", key="reg_pwd")
         new_pwd_confirm = st.text_input("Confirm Password", type="password", key="reg_pwd_confirm")
-
-        if st.button("✨ Create Account & Proceed", use_container_width=True):
+        if st.button("Register & Enter", use_container_width=True):
             is_valid, msg = is_strong_password(new_pwd)
             if not new_id or not new_pwd:
-                st.warning("Please fill in all details.")
+                st.warning("Please fill all details.")
             elif not is_valid:
                 st.error(msg)
             elif new_pwd != new_pwd_confirm:
                 st.error("Passwords do not match!")
             elif new_id in users_db:
-                st.error("Username already registered. Please Sign In.")
+                st.error("Username already registered.")
             else:
                 users_db[new_id] = {"password": new_pwd}
                 save_data(USERS_FILE, users_db)
@@ -297,7 +273,7 @@ if not is_logged_in and time_limit_reached:
                 save_data(HISTORY_FILE, all_histories)
                 st.rerun()
 
-# ----------------- MAIN APP DASHBOARD -----------------
+# ----------------- MAIN PERPLEXITY-STYLE DASHBOARD -----------------
 else:
     all_histories = load_data(HISTORY_FILE, {})
 
@@ -309,17 +285,17 @@ else:
         current_user = st.session_state.logged_in_user
         if current_user not in all_histories:
             all_histories[current_user] = [
-                {"role": "assistant", "content": f"Hello {current_user}! Ask me anything. Upload files, capture camera snaps, or type below."}
+                {"role": "assistant", "content": f"Hello {current_user}! Where knowledge begins. Ask anything or upload files from the sidebar for instant explanation."}
             ]
         user_messages = all_histories[current_user]
 
-    # ================= LEFT SIDEBAR =================
+    # ================= LEFT SIDEBAR (UPLOAD HUB + CHATS) =================
     with st.sidebar:
-        st.markdown('<div class="zeno-brand" style="font-size: 1.5rem;">📁 CHAT SESSIONS</div>', unsafe_allow_html=True)
-        st.caption(f"Logged User: **{current_user}**")
+        st.markdown('<div style="font-family: Orbitron; font-weight: 800; font-size: 1.3rem; color: #38bdf8;">⚡ ZENO AI</div>', unsafe_allow_html=True)
+        st.caption(f"Session: **{current_user}**")
 
-        if st.button("➕ New Chat Session", use_container_width=True):
-            new_welcome = f"Hello {current_user}! Fresh session created. What would you like to ask or explore?"
+        if st.button("➕ New Thread", use_container_width=True):
+            new_welcome = f"Hello {current_user}! What would you like to explore today?"
             if not is_logged_in:
                 st.session_state.guest_messages = [{"role": "assistant", "content": new_welcome}]
             else:
@@ -328,160 +304,146 @@ else:
             st.rerun()
 
         st.markdown("---")
-        st.markdown("### 💬 Saved Messages")
+        st.markdown("### 📎 Media & Upload Hub")
+        st.caption("Upload maadi athava Snap thegiri, Zeno adanne auto explain maaduththe!")
 
-        user_queries = [m["content"] for m in user_messages if m["role"] == "user"]
-        if not user_queries:
-            st.write("No conversations yet.")
-        else:
-            for query in reversed(user_queries[-15:]):
-                preview_text = query[:28] + "..." if len(query) > 28 else query
-                st.markdown(f"🗨️ {preview_text}")
+        side_file = st.file_uploader(
+            "Upload Image, Video, PDF, Docs",
+            type=["png", "jpg", "jpeg", "mp4", "mov", "mkv", "mp3", "wav", "pdf", "txt"],
+            key="sidebar_auto_file",
+            label_visibility="collapsed"
+        )
+
+        with st.popover("📷 Take Camera Snap", use_container_width=True):
+            side_cam = st.camera_input("Snap a photo", key="sidebar_camera_input")
+
+        # AUTO-SEND LOGIC FOR UPLOAD / CAMERA (Zero-click automatic explain)
+        if "last_processed_file" not in st.session_state:
+            st.session_state.last_processed_file = None
+
+        current_file_token = None
+        if side_file:
+            current_file_token = f"file_{side_file.name}_{side_file.size}"
+        elif side_cam:
+            current_file_token = f"cam_{side_cam.size}"
+
+        if current_file_token and current_file_token != st.session_state.last_processed_file:
+            st.session_state.last_processed_file = current_file_token
+            if side_file:
+                auto_msg = f"📎 [Uploaded File: {side_file.name}] Please thoroughly examine and explain this uploaded file in detail. Describe all contents, meaning, and key takeaways."
+            else:
+                auto_msg = "📷 [Live Camera Snap] Please examine this captured photo and describe everything visible in detail."
+
+            user_messages.append({"role": "user", "content": auto_msg})
+            with st.spinner("Zeno is analyzing visual data..."):
+                auto_reply = call_groq_api_robust(auto_msg)
+            user_messages.append({"role": "assistant", "content": auto_reply})
+            if is_logged_in:
+                all_histories[current_user] = user_messages
+                save_data(HISTORY_FILE, all_histories)
+            st.rerun()
 
         st.markdown("---")
-        chat_json_str = json.dumps(user_messages, indent=2)
-        st.download_button("📥 Export JSON History", data=chat_json_str, file_name=f"{current_user}_chat.json", mime="application/json", use_container_width=True)
+        st.markdown("### 💬 History")
+        user_queries = [m["content"] for m in user_messages if m["role"] == "user"]
+        if not user_queries:
+            st.caption("No history yet.")
+        else:
+            for q in reversed(user_queries[-10:]):
+                clean_q = re.sub(r'\[.*?\]', '', q).strip()
+                preview = clean_q[:24] + "..." if len(clean_q) > 24 else clean_q
+                st.markdown(f"• {preview}")
 
+        st.markdown("---")
         if is_logged_in:
-            if st.button("🚪 Sign Out", use_container_width=True):
+            if st.button("Sign Out", use_container_width=True):
                 st.session_state.logged_in_user = None
                 st.query_params.clear()
                 st.session_state.guest_start_time = time.time()
                 st.rerun()
 
-    # ================= TOP HEADER =================
-    head_col1, head_col2 = st.columns([3, 1])
-    with head_col1:
-        st.markdown('<div class="zeno-brand">⚡ ZENO AI | SMART ASSISTANT ⚡</div>', unsafe_allow_html=True)
-        if not is_logged_in:
-            st.markdown(f'<div class="storage-badge" style="border-color: #ff007f; color: #ff80bf;">⏳ Free Trial: <b>{remaining_sec}s remaining</b></div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="storage-badge">✅ Connected: <b>{current_user}</b> | Persistent Account Active ({len(user_messages)} msgs)</div>', unsafe_allow_html=True)
+    # ================= TOP MINIMAL HEADER & APP LAUNCHERS =================
+    st.markdown('<div class="zeno-title">⚡ ZENO AI</div>', unsafe_allow_html=True)
+    st.markdown('<div class="zeno-subtitle">Where knowledge begins · Clean, accurate & fast intelligence</div>', unsafe_allow_html=True)
 
-    # ================= QUICK APP LAUNCHERS =================
     st.markdown("""
-    <div class="glass-card" style="border-color: #00ffcc;">
-        <div style="color: #00ffcc; font-family: 'Orbitron'; font-size: 1.05rem; font-weight: bold; margin-bottom: 8px;">
-            🚀 Quick App Launchers
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            <a class="app-btn" href="https://www.google.com" target="_blank">🔍 Google</a>
-            <a class="app-btn" href="https://www.youtube.com" target="_blank">📺 YouTube</a>
-            <a class="app-btn" href="https://web.whatsapp.com" target="_blank">💬 WhatsApp</a>
-            <a class="app-btn" href="https://mail.google.com" target="_blank">✉️ Gmail</a>
-            <a class="app-btn" href="https://maps.google.com" target="_blank">🗺️ Maps</a>
-            <a class="app-btn" href="https://github.com" target="_blank">🐙 GitHub</a>
-            <a class="app-btn" href="https://www.instagram.com" target="_blank">📸 Instagram</a>
-        </div>
+    <div style="text-align: center; margin-bottom: 25px;">
+        <a class="quick-link" href="https://www.google.com" target="_blank">Google</a>
+        <a class="quick-link" href="https://www.youtube.com" target="_blank">YouTube</a>
+        <a class="quick-link" href="https://web.whatsapp.com" target="_blank">WhatsApp</a>
+        <a class="quick-link" href="https://mail.google.com" target="_blank">Gmail</a>
+        <a class="quick-link" href="https://maps.google.com" target="_blank">Maps</a>
+        <a class="quick-link" href="https://github.com" target="_blank">GitHub</a>
+        <a class="quick-link" href="https://www.instagram.com" target="_blank">Instagram</a>
     </div>
     """, unsafe_allow_html=True)
 
-    # ================= CHAT DISPLAY & SPEAKER =================
-    for idx, msg in enumerate(user_messages):
+    # ================= CHAT DISPLAY =================
+    for msg in user_messages:
+        role_label = "Zeno" if msg["role"] == "assistant" else "You"
         avatar = "⚡" if msg["role"] == "assistant" else "👤"
+
         with st.chat_message(msg["role"], avatar=avatar):
             if msg.get("image_url"):
-                st.image(msg["image_url"], caption="Generated Illustration")
+                st.image(msg["image_url"], caption="Generated Visual")
             st.markdown(msg["content"])
 
             if msg["role"] == "assistant" and len(msg["content"].strip()) > 0:
-                clean_text = re.sub(r'[*#_`]', '', msg["content"][:300]).replace('"', '').replace("'", "").replace('\n', ' ')
-                encoded_text = urllib.parse.quote(clean_text)
-
-                tts_component = f"""
-                <div style="margin-top: 6px; display: flex; gap: 8px;">
-                    <button style="background: linear-gradient(135deg, #00ffcc, #0072ff); border: none; color: #040817; font-weight: 800; padding: 6px 14px; border-radius: 14px; cursor: pointer;" onclick="speakNow()">🔊 Read Aloud</button>
-                    <button style="background: rgba(255, 0, 127, 0.4); border: 1px solid #ff007f; color: #fff; font-weight: 800; padding: 6px 14px; border-radius: 14px; cursor: pointer;" onclick="stopVoice()">⏹️ Stop</button>
+                clean_speech = re.sub(r'[*#_`]', '', msg["content"][:280]).replace('"', '').replace("'", "").replace('\n', ' ')
+                encoded_speech = urllib.parse.quote(clean_speech)
+                tts_ui = f"""
+                <div style="margin-top: 5px;">
+                    <button class="speaker-btn" onclick="speakText('{encoded_speech}')">🔊 Read</button>
+                    <button class="speaker-btn" style="color: #f43f5e;" onclick="window.speechSynthesis.cancel()">⏹ Stop</button>
                 </div>
                 <script>
-                    function speakNow() {{
+                    function speakText(enc) {{
                         if ('speechSynthesis' in window) {{
                             window.speechSynthesis.cancel();
-                            const raw = decodeURIComponent("{encoded_text}");
-                            const utter = new SpeechSynthesisUtterance(raw);
-                            utter.rate = 1.0;
-                            utter.pitch = 1.0;
-                            window.speechSynthesis.speak(utter);
-                        }}
-                    }}
-                    function stopVoice() {{
-                        if ('speechSynthesis' in window) {{
-                            window.speechSynthesis.cancel();
+                            const txt = decodeURIComponent(enc);
+                            const u = new SpeechSynthesisUtterance(txt);
+                            window.speechSynthesis.speak(u);
                         }}
                     }}
                 </script>
                 """
-                st.components.v1.html(tts_component, height=45)
+                st.components.v1.html(tts_ui, height=35)
 
-    # ================= BOTTOM SEND AREA: ATTACHMENTS + TOGGLE CAMERA + CHAT =================
-    st.markdown('<div class="glass-card" style="border-color: #00f2fe; margin-top: 15px;">', unsafe_allow_html=True)
+    # ================= BOTTOM PERPLEXITY-STYLE SEARCH INPUT =================
+    user_prompt = st.chat_input("Ask anything, search topics, or type 'image: sunset' to generate...")
 
-    col_file, col_cam_btn = st.columns([2, 1])
-    with col_file:
-        up_file = st.file_uploader(
-            "📁 Attach Photo / Video / PDF / Audio",
-            type=["png", "jpg", "jpeg", "mp4", "mov", "mkv", "mp3", "wav", "pdf", "txt"],
-            key="bottom_file_uploader",
-            label_visibility="collapsed"
-        )
-    with col_cam_btn:
-        with st.popover("📷 Open Camera Snap", use_container_width=True):
-            cam_snap = st.camera_input("Capture Photo", key="popup_cam_input")
+    if user_prompt:
+        user_messages.append({"role": "user", "content": user_prompt})
+        if is_logged_in:
+            all_histories[current_user] = user_messages
+            save_data(HISTORY_FILE, all_histories)
 
-    if up_file:
-        st.info(f"Attached File: **{up_file.name}**")
-        if up_file.type.startswith("image/"):
-            st.image(up_file, width=120)
-    if cam_snap:
-        st.info("Photo Captured via Camera!")
-        st.image(cam_snap, width=120)
+        with st.chat_message("user", avatar="👤"):
+            st.markdown(user_prompt)
 
-    col_input, col_send = st.columns([4.2, 0.8])
-    with col_input:
-        user_prompt = st.text_input(
-            "Message",
-            placeholder="Type your message, image prompt, or ask about attached file/snap...",
-            key="bottom_chat_text",
-            label_visibility="collapsed"
-        )
-    with col_send:
-        send_btn = st.button("🚀 Send", use_container_width=True)
+        with st.chat_message("assistant", avatar="⚡"):
+            lower_input = user_prompt.lower().strip()
 
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # ================= SUBMIT & SEND LOGIC =================
-    if send_btn:
-        has_file = (up_file is not None)
-        has_cam = (cam_snap is not None)
-        has_text = bool(user_prompt.strip())
-
-        if has_file or has_cam or has_text:
-            final_user_msg = user_prompt.strip()
-
-            if has_file:
-                prefix = f"📎 [Attached: {up_file.name}] "
-                final_user_msg = prefix + (final_user_msg if final_user_msg else f"Please explain this uploaded {up_file.name} in detail.")
-
-            if has_cam:
-                prefix = "📷 [Live Camera Snap] "
-                final_user_msg = prefix + (final_user_msg if final_user_msg else "Please explain this captured camera photo in detail.")
-
-            user_messages.append({"role": "user", "content": final_user_msg})
-
-            lower_input = final_user_msg.lower().strip()
             if lower_input.startswith("image:") or lower_input.startswith("generate image:"):
-                img_desc = final_user_msg.split(":", 1)[1].strip()
+                img_desc = user_prompt.split(":", 1)[1].strip()
                 encoded_desc = urllib.parse.quote(img_desc)
                 gen_image_url = f"https://image.pollinations.ai/prompt/{encoded_desc}?width=768&height=768&nologo=true"
 
-                reply_txt = f"Generated image for: **{img_desc}**"
-                user_messages.append({"role": "assistant", "content": reply_txt, "image_url": gen_image_url})
-            else:
-                with st.spinner("⚡ Zeno is thinking..."):
-                    raw_reply = call_groq_api_robust(final_user_msg)
-                user_messages.append({"role": "assistant", "content": raw_reply})
+                reply_txt = f"Generated visual for: **{img_desc}**"
+                st.image(gen_image_url, caption=f"Prompt: {img_desc}")
+                st.markdown(reply_txt)
 
-            if is_logged_in:
-                all_histories[current_user] = user_messages
-                save_data(HISTORY_FILE, all_histories)
+                user_messages.append({"role": "assistant", "content": reply_txt, "image_url": gen_image_url})
+                if is_logged_in:
+                    all_histories[current_user] = user_messages
+                    save_data(HISTORY_FILE, all_histories)
+            else:
+                with st.spinner("Searching and synthesizing..."):
+                    raw_reply = call_groq_api_robust(user_prompt)
+                st.markdown(raw_reply)
+
+                user_messages.append({"role": "assistant", "content": raw_reply})
+                if is_logged_in:
+                    all_histories[current_user] = user_messages
+                    save_data(HISTORY_FILE, all_histories)
             st.rerun()
